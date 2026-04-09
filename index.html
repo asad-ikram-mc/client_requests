@@ -4,6 +4,47 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Abbott Nutrition — Data Sourcing Feasibility</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════
+// FIREBASE SETUP — Follow these steps (same as A&F Finance):
+// ═══════════════════════════════════════════════════════════════
+// 1. Go to https://console.firebase.google.com
+// 2. Click "Add Project" → name it "abbott-sourcing" → Create
+// 3. In left sidebar → "Build" → "Realtime Database" → "Create Database"
+// 4. Choose location (us-central1 is fine) → Start in TEST MODE → Enable
+// 5. Copy your database URL (looks like: https://abbott-sourcing-xxxxx-default-rtdb.firebaseio.com)
+// 6. Go to Project Settings (gear icon) → "General" tab → scroll to "Your apps"
+// 7. Click the web icon "</>" → Register app (name: "dashboard") → Copy the config
+// 8. Paste the config values below replacing the placeholders
+// 9. In Realtime Database → Rules tab, set:
+//      { "rules": { ".read": true, ".write": true } }
+//    (This allows open access — fine for internal tool. Lock down later if needed.)
+// ═══════════════════════════════════════════════════════════════
+let db = null, dbRef = null;
+try {
+  const firebaseConfig = {
+    apiKey: "AIzaSyBFvZjw35c3Fg5sNaZ1uI-mPg4wbbNtE68",
+    authDomain: "abbott-sourcing.firebaseapp.com",
+    databaseURL: "https://abbott-sourcing-default-rtdb.firebaseio.com",
+    projectId: "abbott-sourcing",
+    storageBucket: "abbott-sourcing.firebasestorage.app",
+    messagingSenderId: "438314500119",
+    appId: "1:438314500119:web:6032640f7f836bc59fdc52"
+  };
+  if (typeof firebase !== 'undefined') {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    dbRef = db.ref('abbott-sourcing');
+    console.log('Firebase initialized successfully');
+  } else {
+    console.log('Firebase SDK not loaded — running in offline mode');
+  }
+} catch(e) {
+  console.log('Firebase init skipped:', e.message);
+}
+</script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0c0e14;--surface:#151820;--surface2:#1c2030;--border:#2a2e3d;--text:#e4e6ef;--text2:#8b90a5;--accent:#4f8cff;--accent2:#6c63ff;--green:#34d399;--green-bg:rgba(52,211,153,0.1);--orange:#fb923c;--orange-bg:rgba(251,146,60,0.1);--red:#f87171;--red-bg:rgba(248,113,113,0.1);--yellow:#fbbf24}
@@ -68,11 +109,28 @@ a.url-link:hover{opacity:1;text-decoration:underline}
 .cost-total{font-size:28px;font-weight:700;color:var(--green);font-family:'Space Mono',monospace}
 .cost-input{width:80px;padding:4px 6px;font-family:'Space Mono',monospace;font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none;text-align:right}
 .cost-input:focus{border-color:var(--green)}
+.add-btn{padding:5px 14px;font-family:'DM Sans',sans-serif;font-size:11px;border:1px dashed var(--green);border-radius:20px;background:transparent;color:var(--green);cursor:pointer;transition:all 0.2s}
+.add-btn:hover{background:rgba(52,211,153,0.1);border-style:solid}
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:32px;width:480px;max-width:90vw;max-height:85vh;overflow-y:auto}
+.modal h3{font-size:16px;font-weight:700;color:var(--accent);margin-bottom:16px}
+.modal-field{margin-bottom:14px}
+.modal-field label{display:block;font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text2);margin-bottom:5px}
+.modal-field select,.modal-field input{width:100%;padding:8px 12px;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);outline:none;appearance:none;-webkit-appearance:none}
+.modal-field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b90a5' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.modal-field select:focus,.modal-field input:focus{border-color:var(--accent)}
+.modal-actions{display:flex;gap:10px;margin-top:20px}
+.modal-actions button{flex:1;padding:10px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none}
+.modal-actions .btn-primary{background:var(--green);color:#0c0e14}
+.modal-actions .btn-cancel{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+.sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 @media(max-width:768px){.hero,.nav,.panel{padding-left:16px;padding-right:16px}.hero h1{font-size:22px}.summary-cards{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
 <body>
-<div class="hero" style="text-align:center"><div class="hero-label">M+C Saatchi Fluency — Data Sourcing</div><h1>Abbott Nutrition <span>×</span> Social Listening</h1><div class="hero-sub" style="margin:0 auto">Feasibility assessment for two social listening briefs. Durex precedent included.</div></div>
+<div class="hero" style="text-align:center"><div class="hero-label">M+C Saatchi Fluency — Data Sourcing</div><h1>Abbott Nutrition <span>×</span> Social Listening</h1><div class="hero-sub" style="margin:0 auto">Feasibility assessment for two social listening briefs. Durex precedent included.</div><div style="margin-top:10px;font-size:11px;color:var(--text2)" id="sync-status"><span class="sync-dot" style="background:var(--green)"></span>Firebase: Live sync enabled — all changes save automatically</div></div>
 <div class="nav"><div class="nav-tab active" data-panel="overview">Overview</div><div class="nav-tab" data-panel="brief1">Brief 1 — Trends</div><div class="nav-tab" data-panel="brief2">Brief 2 — IMF Pilot</div><div class="nav-tab" data-panel="durex">Durex Precedent</div><div class="nav-tab" data-panel="cost">💰 Cost Estimator</div></div>
 
 <div class="panel active" id="overview">
@@ -110,7 +168,7 @@ a.url-link:hover{opacity:1;text-decoration:underline}
     <tr><td style="text-align:left;font-weight:700">Saudi Arabia</td><td class="check">✓</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td style="text-align:left;font-size:10px;color:var(--text2)">Enfamil, NAN, Aptamil, Bebelac</td></tr>
     <tr><td style="text-align:left;font-weight:700">China</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td><td class="check">✓</td><td style="text-align:left;font-size:10px;color:var(--text2)">Boost, Yili, Mengniu, By-Health</td></tr>
   </tbody></table></div>
-  <div class="filters"><span class="filter-label">Market:</span><button class="filter-btn active" data-filter="b1-market" data-value="all">All</button><button class="filter-btn" data-filter="b1-market" data-value="Mexico">Mexico</button><button class="filter-btn" data-filter="b1-market" data-value="CADR">CADR</button><button class="filter-btn" data-filter="b1-market" data-value="Philippines">Philippines</button><button class="filter-btn" data-filter="b1-market" data-value="Vietnam">Vietnam</button><button class="filter-btn" data-filter="b1-market" data-value="India">India</button><button class="filter-btn" data-filter="b1-market" data-value="Saudi Arabia">Saudi Arabia</button><button class="filter-btn" data-filter="b1-market" data-value="China">China</button><span style="margin-left:auto"></span><button class="filter-btn" id="b1-sort-rank" onclick="toggleSort('b1')">⚡ AI Ranking</button></div>
+  <div class="filters"><span class="filter-label">Market:</span><button class="filter-btn active" data-filter="b1-market" data-value="all">All</button><button class="filter-btn" data-filter="b1-market" data-value="Mexico">Mexico</button><button class="filter-btn" data-filter="b1-market" data-value="CADR">CADR</button><button class="filter-btn" data-filter="b1-market" data-value="Philippines">Philippines</button><button class="filter-btn" data-filter="b1-market" data-value="Vietnam">Vietnam</button><button class="filter-btn" data-filter="b1-market" data-value="India">India</button><button class="filter-btn" data-filter="b1-market" data-value="Saudi Arabia">Saudi Arabia</button><button class="filter-btn" data-filter="b1-market" data-value="China">China</button><span style="margin-left:auto"></span><button class="add-btn" onclick="openAddModal('b1')">+ Add Source</button><button class="filter-btn" id="b1-sort-rank" onclick="toggleSort('b1')">⚡ AI Ranking</button></div>
   <div class="table-wrap"><table id="b1-table"><thead><tr></tr></thead><tbody></tbody></table></div>
 </div>
 
@@ -124,7 +182,7 @@ a.url-link:hover{opacity:1;text-decoration:underline}
     <tr><td style="text-align:left;font-weight:700">India</td><td class="check">✓</td><td style="text-align:left;font-size:10px;color:var(--text2)">Enfamil, NAN, Lactogen, Aptamil</td><td style="text-align:left;font-size:10px;color:var(--text2)">IMS Act → organic conversation key</td></tr>
     <tr><td style="text-align:left;font-weight:700">Saudi Arabia</td><td class="check">✓</td><td style="text-align:left;font-size:10px;color:var(--text2)">Enfamil, NAN, Aptamil, Bebelac</td><td style="text-align:left;font-size:10px;color:var(--text2)">Arabic, Twitter/X dominant, cultural trust</td></tr>
   </tbody></table></div>
-  <div class="filters"><span class="filter-label">Market:</span><button class="filter-btn active" data-filter="b2-market" data-value="all">All</button><button class="filter-btn" data-filter="b2-market" data-value="Mexico">Mexico</button><button class="filter-btn" data-filter="b2-market" data-value="CADR">CADR</button><button class="filter-btn" data-filter="b2-market" data-value="Philippines">Philippines</button><button class="filter-btn" data-filter="b2-market" data-value="Vietnam">Vietnam</button><button class="filter-btn" data-filter="b2-market" data-value="India">India</button><button class="filter-btn" data-filter="b2-market" data-value="Saudi Arabia">Saudi Arabia</button><span style="margin-left:auto"></span><button class="filter-btn" id="b2-sort-rank" onclick="toggleSort('b2')">⚡ AI Ranking</button></div>
+  <div class="filters"><span class="filter-label">Market:</span><button class="filter-btn active" data-filter="b2-market" data-value="all">All</button><button class="filter-btn" data-filter="b2-market" data-value="Mexico">Mexico</button><button class="filter-btn" data-filter="b2-market" data-value="CADR">CADR</button><button class="filter-btn" data-filter="b2-market" data-value="Philippines">Philippines</button><button class="filter-btn" data-filter="b2-market" data-value="Vietnam">Vietnam</button><button class="filter-btn" data-filter="b2-market" data-value="India">India</button><button class="filter-btn" data-filter="b2-market" data-value="Saudi Arabia">Saudi Arabia</button><span style="margin-left:auto"></span><button class="add-btn" onclick="openAddModal('b2')">+ Add Source</button><button class="filter-btn" id="b2-sort-rank" onclick="toggleSort('b2')">⚡ AI Ranking</button></div>
   <div class="table-wrap"><table id="b2-table"><thead><tr></tr></thead><tbody></tbody></table></div>
 </div>
 
@@ -429,6 +487,174 @@ document.querySelectorAll('.filter-btn').forEach(btn=>{if(btn.id?.includes('sort
 // ── INIT ──
 document.getElementById('total-sources').textContent=b1Data.length+b2Data.length;
 drawDonut();showCat('scraped');drawBars();renderB1();renderB2();renderDurex();renderCost();
+</script>
+<!-- ══════ ADD SOURCE MODAL ══════ -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <h3 id="modal-title">+ Add New Source</h3>
+    <div class="modal-field"><label>Market</label>
+      <select id="add-market"><option value="Mexico">Mexico</option><option value="CADR">CADR</option><option value="Philippines">Philippines</option><option value="Vietnam">Vietnam</option><option value="India">India</option><option value="Saudi Arabia">Saudi Arabia</option><option value="China">China</option></select></div>
+    <div class="modal-field"><label>Category</label>
+      <select id="add-cat"><option value="Infant Formula">Infant Formula</option><option value="Pediatric">Pediatric</option><option value="Adult Nutrition">Adult Nutrition</option><option value="Diabetes">Diabetes</option><option value="All Categories">All Categories</option><option value="IMF + Pediatric">IMF + Pediatric</option></select></div>
+    <div class="modal-field"><label>Platform / Source Name</label>
+      <input id="add-platform" placeholder="e.g. Shopee Thailand, BabyCenter UK..." /></div>
+    <div class="modal-field"><label>Source Type</label>
+      <select id="add-type"><option value="E-commerce">E-commerce</option><option value="Social">Social</option><option value="Forum">Forum</option></select></div>
+    <div class="modal-field"><label>Search / Category URL</label>
+      <input id="add-url" placeholder="https://..." /></div>
+    <div class="modal-field"><label>Estimated Volume</label>
+      <input id="add-vol" placeholder="e.g. 1,000-3,000" /></div>
+    <div class="modal-field"><label>Feasibility</label>
+      <select id="add-feas"><option value="HIGH">HIGH</option><option value="HIGH (Apify)">HIGH (Apify)</option><option value="MEDIUM">MEDIUM</option><option value="LOW-MED">LOW-MED</option></select></div>
+    <div class="modal-field"><label>Language</label>
+      <select id="add-lang"><option value="English">English</option><option value="Spanish">Spanish</option><option value="Vietnamese">Vietnamese</option><option value="Arabic">Arabic</option><option value="English/Hindi">English/Hindi</option><option value="English/Taglish">English/Taglish</option><option value="Mandarin">Mandarin</option><option value="Arabic/English">Arabic/English</option></select></div>
+    <div class="modal-field"><label>Notes / Why This Source</label>
+      <input id="add-notes" placeholder="Why is this valuable?" /></div>
+    <div class="modal-field"><label>Apify Cost (if social)</label>
+      <input id="add-apify" placeholder="e.g. ~$25/50K or N/A" value="N/A" /></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeAddModal()">Cancel</button>
+      <button class="btn-primary" onclick="submitAddSource()">Add Source</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── ADD SOURCE MODAL ──
+let addBrief = 'b1';
+function openAddModal(brief) {
+  addBrief = brief;
+  document.getElementById('modal-title').textContent = brief === 'b1' ? '+ Add Source to Brief 1' : '+ Add Source to Brief 2';
+  // Brief 2 is Similac only
+  const catSel = document.getElementById('add-cat');
+  if (brief === 'b2') {
+    catSel.innerHTML = '<option value="Infant Formula">Infant Formula (Similac)</option>';
+    catSel.disabled = true;
+  } else {
+    catSel.innerHTML = '<option value="Infant Formula">Infant Formula</option><option value="Pediatric">Pediatric</option><option value="Adult Nutrition">Adult Nutrition</option><option value="Diabetes">Diabetes</option><option value="All Categories">All Categories</option><option value="IMF + Pediatric">IMF + Pediatric</option>';
+    catSel.disabled = false;
+  }
+  document.getElementById('add-modal').classList.add('show');
+}
+function closeAddModal() { document.getElementById('add-modal').classList.remove('show'); }
+
+function submitAddSource() {
+  const src = {
+    m: document.getElementById('add-market').value,
+    cat: document.getElementById('add-cat').value,
+    p: document.getElementById('add-platform').value,
+    s: document.getElementById('add-platform').value,
+    t: document.getElementById('add-type').value,
+    url: document.getElementById('add-url').value || '#',
+    vol: document.getElementById('add-vol').value || 'TBD',
+    feas: document.getElementById('add-feas').value,
+    lang: document.getElementById('add-lang').value,
+    n: document.getElementById('add-notes').value || '',
+    why: document.getElementById('add-notes').value || '',
+    apify: document.getElementById('add-apify').value || 'N/A',
+    rank: 50,
+    custom: true,
+    addedBy: 'user',
+    addedAt: new Date().toISOString()
+  };
+  if (!src.p) { alert('Please enter a platform/source name'); return; }
+  
+  if (addBrief === 'b1') { b1Data.push(src); } else { b2Data.push(src); }
+  
+  // Save to Firebase
+  saveToFirebase();
+  
+  closeAddModal();
+  // Clear form
+  ['add-platform','add-url','add-vol','add-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('add-apify').value = 'N/A';
+  
+  if (addBrief === 'b1') renderB1(); else renderB2();
+  document.getElementById('total-sources').textContent = b1Data.length + b2Data.length;
+}
+
+// ── FIREBASE SYNC ──
+function saveToFirebase() {
+  if (!dbRef) return;
+  try {
+    const customB1 = b1Data.filter(d => d.custom);
+    const customB2 = b2Data.filter(d => d.custom);
+    const selections = {};
+    selectedPlatforms.forEach((v, k) => { selections[k] = v; });
+    
+    dbRef.set({
+      customB1: customB1,
+      customB2: customB2,
+      selections: selections,
+      lastUpdated: new Date().toISOString()
+    });
+    flashSync('saved');
+  } catch (e) {
+    console.log('Firebase save error:', e.message);
+  }
+}
+
+function loadFromFirebase() {
+  if (!dbRef) {
+    document.getElementById('sync-status').innerHTML = '<span class="sync-dot" style="background:var(--orange)"></span>Offline mode — add Firebase config to enable live sync';
+    return;
+  }
+  try {
+    dbRef.on('value', (snapshot) => {
+      const data = snapshot.val();
+      if (!data) return;
+      
+      // Load custom B1 sources
+      if (data.customB1) {
+        // Remove old custom entries first
+        while (b1Data.length > 0 && b1Data[b1Data.length - 1].custom) b1Data.pop();
+        data.customB1.forEach(s => { s.custom = true; b1Data.push(s); });
+      }
+      // Load custom B2 sources
+      if (data.customB2) {
+        while (b2Data.length > 0 && b2Data[b2Data.length - 1].custom) b2Data.pop();
+        data.customB2.forEach(s => { s.custom = true; b2Data.push(s); });
+      }
+      // Load selections
+      if (data.selections) {
+        selectedPlatforms.clear();
+        Object.entries(data.selections).forEach(([k, v]) => { selectedPlatforms.set(k, v); });
+      }
+      
+      renderB1(); renderB2(); renderCost();
+      document.getElementById('total-sources').textContent = b1Data.length + b2Data.length;
+      flashSync('loaded');
+    });
+  } catch (e) {
+    console.log('Firebase load error:', e.message);
+    document.getElementById('sync-status').innerHTML = '<span class="sync-dot" style="background:var(--orange)"></span>Offline mode — add Firebase config to enable live sync';
+  }
+}
+
+function flashSync(type) {
+  const el = document.getElementById('sync-status');
+  const orig = el.innerHTML;
+  el.innerHTML = type === 'saved' 
+    ? '<span class="sync-dot" style="background:var(--green)"></span>✓ Saved to Firebase' 
+    : '<span class="sync-dot" style="background:var(--accent)"></span>↓ Loaded from Firebase';
+  setTimeout(() => { el.innerHTML = '<span class="sync-dot" style="background:var(--green)"></span>Firebase: Live sync enabled'; }, 2000);
+}
+
+// Override toggleSelect to also save to Firebase
+const origToggleSelect = toggleSelect;
+toggleSelect = function(brief, idx) {
+  const key = brief + '-' + idx;
+  const data = brief === 'b1' ? b1Data : b2Data;
+  const d = data[idx];
+  if (selectedPlatforms.has(key)) selectedPlatforms.delete(key);
+  else selectedPlatforms.set(key, { brief: brief === 'b1' ? 'Brief 1' : 'Brief 2', market: d.m, platform: d.p || d.s, type: d.t, apify: d.apify || 'N/A', cost: 0 });
+  if (brief === 'b1') renderB1(); else renderB2();
+  renderCost();
+  saveToFirebase();
+};
+
+// Try to load from Firebase on init
+try { loadFromFirebase(); } catch(e) { console.log('Firebase not configured yet'); }
 </script>
 </body>
 </html>
