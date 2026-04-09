@@ -168,7 +168,7 @@ a.url-link:hover{opacity:1;text-decoration:underline}
     <tr><td style="text-align:left;font-weight:700">Saudi Arabia</td><td class="check">✓</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td style="text-align:left;font-size:10px;color:var(--text2)">Enfamil, NAN, Aptamil, Bebelac</td></tr>
     <tr><td style="text-align:left;font-weight:700">China</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td><td class="check">✓</td><td style="text-align:left;font-size:10px;color:var(--text2)">Boost, Yili, Mengniu, By-Health</td></tr>
   </tbody></table></div>
-  <div class="filters"><span class="filter-label">Market:</span><button class="filter-btn active" data-filter="b1-market" data-value="all">All</button><button class="filter-btn" data-filter="b1-market" data-value="Mexico">Mexico</button><button class="filter-btn" data-filter="b1-market" data-value="CADR">CADR</button><button class="filter-btn" data-filter="b1-market" data-value="Philippines">Philippines</button><button class="filter-btn" data-filter="b1-market" data-value="Vietnam">Vietnam</button><button class="filter-btn" data-filter="b1-market" data-value="India">India</button><button class="filter-btn" data-filter="b1-market" data-value="Saudi Arabia">Saudi Arabia</button><button class="filter-btn" data-filter="b1-market" data-value="China">China</button><span style="margin-left:auto"></span><button class="add-btn" onclick="openAddModal('b1')">+ Add Source</button><button class="filter-btn" id="b1-sort-rank" onclick="toggleSort('b1')">⚡ AI Ranking</button></div>
+  <div class="filters"><span class="filter-label">Market:</span><button class="filter-btn active" data-filter="b1-market" data-value="all">All</button><button class="filter-btn" data-filter="b1-market" data-value="Mexico">Mexico</button><button class="filter-btn" data-filter="b1-market" data-value="CADR">CADR</button><button class="filter-btn" data-filter="b1-market" data-value="Philippines">Philippines</button><button class="filter-btn" data-filter="b1-market" data-value="Vietnam">Vietnam</button><button class="filter-btn" data-filter="b1-market" data-value="India">India</button><button class="filter-btn" data-filter="b1-market" data-value="Saudi Arabia">Saudi Arabia</button><button class="filter-btn" data-filter="b1-market" data-value="China">China</button><span style="margin-left:auto"></span><button class="add-btn" onclick="openAddModal('b1')">+ Add Source</button><button class="filter-btn" onclick="exportCSV('b1')">📥 Export CSV</button><button class="filter-btn" id="b1-sort-rank" onclick="toggleSort('b1')">⚡ AI Ranking</button></div>
   <div class="table-wrap"><table id="b1-table"><thead><tr></tr></thead><tbody></tbody></table></div>
 </div>
 
@@ -182,7 +182,7 @@ a.url-link:hover{opacity:1;text-decoration:underline}
     <tr><td style="text-align:left;font-weight:700">India</td><td class="check">✓</td><td style="text-align:left;font-size:10px;color:var(--text2)">Enfamil, NAN, Lactogen, Aptamil</td><td style="text-align:left;font-size:10px;color:var(--text2)">IMS Act → organic conversation key</td></tr>
     <tr><td style="text-align:left;font-weight:700">Saudi Arabia</td><td class="check">✓</td><td style="text-align:left;font-size:10px;color:var(--text2)">Enfamil, NAN, Aptamil, Bebelac</td><td style="text-align:left;font-size:10px;color:var(--text2)">Arabic, Twitter/X dominant, cultural trust</td></tr>
   </tbody></table></div>
-  <div class="filters"><span class="filter-label">Market:</span><button class="filter-btn active" data-filter="b2-market" data-value="all">All</button><button class="filter-btn" data-filter="b2-market" data-value="Mexico">Mexico</button><button class="filter-btn" data-filter="b2-market" data-value="CADR">CADR</button><button class="filter-btn" data-filter="b2-market" data-value="Philippines">Philippines</button><button class="filter-btn" data-filter="b2-market" data-value="Vietnam">Vietnam</button><button class="filter-btn" data-filter="b2-market" data-value="India">India</button><button class="filter-btn" data-filter="b2-market" data-value="Saudi Arabia">Saudi Arabia</button><span style="margin-left:auto"></span><button class="add-btn" onclick="openAddModal('b2')">+ Add Source</button><button class="filter-btn" id="b2-sort-rank" onclick="toggleSort('b2')">⚡ AI Ranking</button></div>
+  <div class="filters"><span class="filter-label">Market:</span><button class="filter-btn active" data-filter="b2-market" data-value="all">All</button><button class="filter-btn" data-filter="b2-market" data-value="Mexico">Mexico</button><button class="filter-btn" data-filter="b2-market" data-value="CADR">CADR</button><button class="filter-btn" data-filter="b2-market" data-value="Philippines">Philippines</button><button class="filter-btn" data-filter="b2-market" data-value="Vietnam">Vietnam</button><button class="filter-btn" data-filter="b2-market" data-value="India">India</button><button class="filter-btn" data-filter="b2-market" data-value="Saudi Arabia">Saudi Arabia</button><span style="margin-left:auto"></span><button class="add-btn" onclick="openAddModal('b2')">+ Add Source</button><button class="filter-btn" onclick="exportCSV('b2')">📥 Export CSV</button><button class="filter-btn" id="b2-sort-rank" onclick="toggleSort('b2')">⚡ AI Ranking</button></div>
   <div class="table-wrap"><table id="b2-table"><thead><tr></tr></thead><tbody></tbody></table></div>
 </div>
 
@@ -195,6 +195,7 @@ a.url-link:hover{opacity:1;text-decoration:underline}
 
 <div class="panel" id="cost">
   <div class="section-header"><h2>💰 Cost Estimator</h2><p>Platforms you selected (✓) from Brief 1 &amp; 2 appear here. Add costs per platform. Durex spider overlap detected automatically.</p></div>
+  <div style="margin-bottom:16px"><button class="filter-btn" onclick="exportCSV('cost')">📥 Export Cost Estimate CSV</button></div>
   <div id="cost-empty" style="text-align:center;padding:60px;color:var(--text2);font-size:14px;">No platforms selected yet. Go to <strong>Brief 1</strong> or <strong>Brief 2</strong> and click the ✓ button on platforms to scrape.</div>
   <div id="cost-content" style="display:none;">
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;">
@@ -396,7 +397,7 @@ function renderB1(){
   else if(b1Sort.col)rows.sort((a,b)=>{let va=a[b1Sort.col]||'',vb=b[b1Sort.col]||'';return typeof va==='number'?(b1Sort.asc?va-vb:vb-va):(b1Sort.asc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va)))});
   const cols=['sel','rank','m','cat','brands','p','t','vol','feas','apify','url','n','actual'];
   const labels=['Scrape?','Rank','Market','Category','Brand(s)','Platform','Type','Claude Est.','Feasibility','Apify $','URL','Notes','Actual Vol.'];
-  document.querySelector('#b1-table thead tr').innerHTML=cols.map((c,i)=>`<th onclick="${c!=='sel'&&c!=='actual'&&c!=='url'&&c!=='brands'?`b1Sort.ranked=false;document.getElementById('b1-sort-rank').classList.remove('active');if(b1Sort.col==='${c}')b1Sort.asc=!b1Sort.asc;else{b1Sort.col='${c}';b1Sort.asc=true};renderB1()`:''}">${labels[i]}</th>`).join('');
+  document.querySelector('#b1-table thead tr').innerHTML=cols.map((c,i)=>{const sortable=c!=='sel'&&c!=='actual'&&c!=='url'&&c!=='brands';const arrow=b1Sort.col===c?(b1Sort.asc?' ▲':' ▼'):(sortable?' ⇅':'');return `<th style="${sortable?'cursor:pointer':''}" onclick="${sortable?`b1Sort.ranked=false;document.getElementById('b1-sort-rank').classList.remove('active');if(b1Sort.col==='${c}')b1Sort.asc=!b1Sort.asc;else{b1Sort.col='${c}';b1Sort.asc=true};renderB1()`:''}">${labels[i]}<span style="font-size:8px;opacity:${b1Sort.col===c?'1':'0.3'};margin-left:3px;color:${b1Sort.col===c?'var(--accent)':'inherit'}">${arrow}</span></th>`}).join('');
   document.querySelector('#b1-table tbody').innerHTML=rows.map(d=>{const oi=b1Data.indexOf(d);const key='b1-'+oi;const sel=selectedPlatforms.has(key);return `<tr class="${sel?'selected-row':''}"><td><button class="select-btn ${sel?'checked':''}" onclick="toggleSelect('b1',${oi})">${sel?'✓':''}</button></td><td>${rankBadge(d.rank)}</td><td>${d.m}</td><td>${d.cat}</td><td style="font-size:10px;color:var(--yellow);font-weight:500">${catBrands(d.cat)}</td><td><strong>${d.p}</strong> ${durexTag(d.p)}</td><td>${typeTag(d.t)}</td><td>${d.vol}</td><td>${feasTag(d.feas)}</td><td style="font-size:10px;color:var(--text2)">${d.apify}</td><td><a class="url-link" href="${d.url}" target="_blank">Open→</a></td><td style="color:var(--text2);font-size:10px;max-width:180px">${d.n}</td><td><input class="actual-input" placeholder="—"/></td></tr>`}).join('')}
 
 // ── RENDER B2 ──
@@ -407,7 +408,7 @@ function renderB2(){
   else if(b2Sort.col)rows.sort((a,b)=>{let va=a[b2Sort.col]||'',vb=b[b2Sort.col]||'';return typeof va==='number'?(b2Sort.asc?va-vb:vb-va):(b2Sort.asc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va)))});
   const cols=['sel','rank','m','brand','s','t','why','vol','lang','apify','url','actual'];
   const labels=['Scrape?','Rank','Market','Brand','Source','Type','Why Best','Claude Est.','Lang','Apify $','URL','Actual Vol.'];
-  document.querySelector('#b2-table thead tr').innerHTML=cols.map((c,i)=>`<th onclick="${c!=='sel'&&c!=='actual'&&c!=='url'&&c!=='brand'?`b2Sort.ranked=false;document.getElementById('b2-sort-rank').classList.remove('active');if(b2Sort.col==='${c}')b2Sort.asc=!b2Sort.asc;else{b2Sort.col='${c}';b2Sort.asc=true};renderB2()`:''}">${labels[i]}</th>`).join('');
+  document.querySelector('#b2-table thead tr').innerHTML=cols.map((c,i)=>{const sortable=c!=='sel'&&c!=='actual'&&c!=='url'&&c!=='brand';const arrow=b2Sort.col===c?(b2Sort.asc?' ▲':' ▼'):(sortable?' ⇅':'');return `<th style="${sortable?'cursor:pointer':''}" onclick="${sortable?`b2Sort.ranked=false;document.getElementById('b2-sort-rank').classList.remove('active');if(b2Sort.col==='${c}')b2Sort.asc=!b2Sort.asc;else{b2Sort.col='${c}';b2Sort.asc=true};renderB2()`:''}">${labels[i]}<span style="font-size:8px;opacity:${b2Sort.col===c?'1':'0.3'};margin-left:3px;color:${b2Sort.col===c?'var(--accent)':'inherit'}">${arrow}</span></th>`}).join('');
   document.querySelector('#b2-table tbody').innerHTML=rows.map(d=>{const oi=b2Data.indexOf(d);const key='b2-'+oi;const sel=selectedPlatforms.has(key);return `<tr class="${sel?'selected-row':''}"><td><button class="select-btn ${sel?'checked':''}" onclick="toggleSelect('b2',${oi})">${sel?'✓':''}</button></td><td>${rankBadge(d.rank)}</td><td>${d.m}</td><td style="font-size:10px;color:var(--yellow);font-weight:500">Similac</td><td><strong>${d.s}</strong> ${durexTag(d.s)}</td><td>${typeTag(d.t)}</td><td style="font-size:10px;color:var(--text2);max-width:250px">${d.why}</td><td>${d.vol}</td><td style="text-align:center;font-size:11px">${d.lang}</td><td style="font-size:10px;color:var(--text2)">${d.apify}</td><td><a class="url-link" href="${d.url}" target="_blank">Open→</a></td><td><input class="actual-input" placeholder="—"/></td></tr>`}).join('')}
 
 // ── RENDER DUREX ──
@@ -652,6 +653,60 @@ toggleSelect = function(brief, idx) {
   renderCost();
   saveToFirebase();
 };
+
+// ── EXPORT CSV ──
+function exportCSV(brief) {
+  let rows = [], filename = '';
+  if (brief === 'b1') {
+    filename = 'Abbott_Brief1_Trend_Tracker.csv';
+    const mf = document.querySelector('[data-filter="b1-market"].active')?.dataset.value || 'all';
+    let data = mf === 'all' ? b1Data : b1Data.filter(d => d.m === mf);
+    rows.push(['Scrape?','Rank','Market','Category','Brand(s)','Platform','Type','Claude Est. Volume','Feasibility','Apify Cost','URL','Notes']);
+    data.forEach(d => {
+      const sel = selectedPlatforms.has('b1-' + b1Data.indexOf(d)) ? 'YES' : '';
+      rows.push([sel, d.rank, d.m, d.cat, catBrands(d.cat), d.p, d.t, d.vol, d.feas, d.apify, d.url, d.n]);
+    });
+  } else if (brief === 'b2') {
+    filename = 'Abbott_Brief2_IMF_Pilot.csv';
+    const mf = document.querySelector('[data-filter="b2-market"].active')?.dataset.value || 'all';
+    let data = mf === 'all' ? b2Data : b2Data.filter(d => d.m === mf);
+    rows.push(['Scrape?','Rank','Market','Brand','Source','Type','Why Best for Brief 2','Claude Est. Volume','Language','Apify Cost','URL']);
+    data.forEach(d => {
+      const sel = selectedPlatforms.has('b2-' + b2Data.indexOf(d)) ? 'YES' : '';
+      rows.push([sel, d.rank, d.m, 'Similac', d.s, d.t, d.why, d.vol, d.lang, d.apify, d.url]);
+    });
+  } else if (brief === 'cost') {
+    filename = 'Abbott_Cost_Estimate.csv';
+    rows.push(['Brief','Market','Platform','Type','Durex Spider?','Apify Cost','Custom Cost ($)']);
+    let total = 0;
+    selectedPlatforms.forEach((v, k) => {
+      const st = isDurex(v.platform);
+      const status = st === 'scraped' ? 'YES - Durex Spider' : st === 'reusable' ? 'Adaptable' : 'New Build';
+      rows.push([v.brief, v.market, v.platform, v.type, status, v.apify || 'N/A', v.cost || 0]);
+      total += v.cost || 0;
+    });
+    rows.push([]);
+    rows.push(['','','','','','TOTAL:', '$' + total.toLocaleString()]);
+  }
+  
+  // Convert to CSV string
+  const csvContent = rows.map(row => row.map(cell => {
+    const str = String(cell || '');
+    // Escape quotes and wrap in quotes if contains comma, quote, or newline
+    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+      return '"' + str.replace(/"/g, '""') + '"';
+    }
+    return str;
+  }).join(',')).join('\n');
+  
+  // Download
+  const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
 
 // Try to load from Firebase on init
 try { loadFromFirebase(); } catch(e) { console.log('Firebase not configured yet'); }
