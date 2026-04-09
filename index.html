@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Abbott Nutrition — Data Sourcing Feasibility</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0c0e14;--surface:#151820;--surface2:#1c2030;--border:#2a2e3d;--text:#e4e6ef;--text2:#8b90a5;--accent:#4f8cff;--accent2:#6c63ff;--green:#34d399;--green-bg:rgba(52,211,153,0.1);--orange:#fb923c;--orange-bg:rgba(251,146,60,0.1);--red:#f87171;--red-bg:rgba(248,113,113,0.1);--yellow:#fbbf24}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.hero{padding:36px 48px 20px;background:linear-gradient(135deg,#0c0e14 0%,#151c2e 50%,#0c0e14 100%);border-bottom:1px solid var(--border);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;right:-20%;width:500px;height:500px;background:radial-gradient(circle,rgba(79,140,255,0.08) 0%,transparent 70%);pointer-events:none}
+.hero-label{font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:3px;color:var(--accent);margin-bottom:10px}
+.hero h1{font-size:30px;font-weight:700;letter-spacing:-0.5px;margin-bottom:6px}
+.hero h1 span{color:var(--accent)}
+.hero-sub{color:var(--text2);font-size:14px}
+.nav{display:flex;gap:0;padding:0 48px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.nav-tab{padding:13px 24px;font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;user-select:none}
+.nav-tab:hover{color:var(--text);background:var(--surface2)}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);background:rgba(79,140,255,0.05)}
+.panel{display:none;padding:28px 48px 64px;animation:fadeIn 0.3s ease}
+.panel.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.section-header{margin-bottom:20px}
+.section-header h2{font-size:20px;font-weight:700;margin-bottom:4px}
+.section-header p{color:var(--text2);font-size:13px;line-height:1.5}
+.summary-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:24px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;transition:border-color 0.2s}
+.card:hover{border-color:var(--accent)}
+.card-label{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text2);margin-bottom:6px}
+.card-value{font-size:26px;font-weight:700;color:var(--accent)}
+.card-value.green{color:var(--green)}.card-value.orange{color:var(--orange)}
+.brief-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:20px;border-left:3px solid var(--accent)}
+.brief-box h3{font-size:15px;font-weight:700;margin-bottom:8px;color:var(--accent)}
+.brief-box ul{list-style:none;padding:0}
+.brief-box li{padding:3px 0;font-size:12px;color:var(--text2);line-height:1.5}
+.brief-box li strong{color:var(--text)}
+.brief-box li::before{content:'→ ';color:var(--accent);font-family:'Space Mono',monospace}
+.filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.filter-label{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text2);margin-right:2px}
+.filter-btn{padding:5px 14px;font-family:'DM Sans',sans-serif;font-size:11px;border:1px solid var(--border);border-radius:20px;background:transparent;color:var(--text2);cursor:pointer;transition:all 0.2s}
+.filter-btn:hover{border-color:var(--accent);color:var(--text)}
+.filter-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border);background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{background:var(--surface2);padding:10px 12px;text-align:left;font-family:'Space Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text2);border-bottom:1px solid var(--border);position:sticky;top:0;white-space:nowrap;cursor:pointer;user-select:none}
+thead th:hover{color:var(--accent)}
+tbody td{padding:8px 12px;border-bottom:1px solid rgba(42,46,61,0.5);vertical-align:middle}
+tbody tr:hover{background:rgba(79,140,255,0.03)}
+tbody tr.selected-row{background:rgba(52,211,153,0.06) !important}
+.tag{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:500;font-family:'Space Mono',monospace;letter-spacing:0.5px}
+.tag-high{background:var(--green-bg);color:var(--green)}.tag-med{background:var(--orange-bg);color:var(--orange)}.tag-low{background:var(--red-bg);color:var(--red)}
+.tag-scraped{background:rgba(52,211,153,0.15);color:var(--green);border:1px solid rgba(52,211,153,0.3)}
+.tag-ecom{background:rgba(79,140,255,0.1);color:var(--accent)}.tag-social{background:rgba(251,146,60,0.1);color:var(--orange)}.tag-forum{background:rgba(108,99,255,0.1);color:var(--accent2)}
+a.url-link{color:var(--accent);text-decoration:none;font-size:11px;opacity:0.8;transition:opacity 0.2s}
+a.url-link:hover{opacity:1;text-decoration:underline}
+.rank-badge{display:inline-flex;align-items:center;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px}
+.select-btn{width:22px;height:22px;border-radius:4px;border:2px solid var(--border);background:transparent;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;font-size:12px;color:transparent}
+.select-btn:hover{border-color:var(--green)}
+.select-btn.checked{background:var(--green);border-color:var(--green);color:#0c0e14}
+.actual-input{width:90px;padding:4px 8px;font-family:'DM Sans',sans-serif;font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none}
+.actual-input:focus{border-color:var(--accent)}
+.matrix-table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:20px}
+.matrix-table th,.matrix-table td{padding:6px 10px;border:1px solid var(--border);text-align:center}
+.matrix-table th{background:var(--surface2);font-family:'Space Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--text2)}
+.matrix-table .check{color:var(--green);font-weight:700}.matrix-table .cross{color:var(--red);opacity:0.4}
+.cost-total{font-size:28px;font-weight:700;color:var(--green);font-family:'Space Mono',monospace}
+.cost-input{width:80px;padding:4px 6px;font-family:'Space Mono',monospace;font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);outline:none;text-align:right}
+.cost-input:focus{border-color:var(--green)}
+@media(max-width:768px){.hero,.nav,.panel{padding-left:16px;padding-right:16px}.hero h1{font-size:22px}.summary-cards{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="hero" style="text-align:center"><div class="hero-label">M+C Saatchi Fluency — Data Sourcing</div><h1>Abbott Nutrition <span>×</span> Social Listening</h1><div class="hero-sub" style="margin:0 auto">Feasibility assessment for two social listening briefs. Durex precedent included.</div></div>
+<div class="nav"><div class="nav-tab active" data-panel="overview">Overview</div><div class="nav-tab" data-panel="brief1">Brief 1 — Trends</div><div class="nav-tab" data-panel="brief2">Brief 2 — IMF Pilot</div><div class="nav-tab" data-panel="durex">Durex Precedent</div><div class="nav-tab" data-panel="cost">💰 Cost Estimator</div></div>
+
+<div class="panel active" id="overview">
+  <div class="summary-cards">
+    <div class="card"><div class="card-label">Briefs</div><div class="card-value">2</div></div>
+    <div class="card"><div class="card-label">Categories</div><div class="card-value">4</div></div>
+    <div class="card"><div class="card-label">Markets</div><div class="card-value">7</div></div>
+    <div class="card"><div class="card-label">Sources Mapped</div><div class="card-value green" id="total-sources">0</div></div>
+    <div class="card"><div class="card-label">Durex Reusable</div><div class="card-value orange">9</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div class="brief-box"><h3>Brief 1 — Global Trend Tracker</h3><ul><li><strong>All 4 brands:</strong> Similac, PediaSure, Ensure, Glucerna</li><li><strong>7 markets:</strong> MX, CADR, PH, VN, India, Saudi (IMF+Ped only), China (Ensure+Glucerna only)</li><li><strong>Goal:</strong> Quantify trending topics, growth rates, share of voice</li><li><strong>Data type:</strong> Volume + timestamps for trend analysis</li></ul></div>
+    <div class="brief-box" style="border-left-color:var(--accent2);"><h3>Brief 2 — IMF Pilot (Similac Only)</h3><ul><li><strong>Similac only</strong> — 6 markets incl. Vietnam &amp; Philippines</li><li><strong>Priority 1:</strong> Emotional drivers &amp; trust</li><li><strong>Priority 2:</strong> Retention &amp; category exit</li><li><strong>Data type:</strong> Rich verbatims from mom communities</li></ul></div>
+  </div>
+  <div style="margin-top:16px;"><div class="section-header"><h2>Source Overlap — Reuse vs New Build</h2></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;">
+        <svg id="donut-chart" viewBox="0 0 400 300" style="width:100%;max-width:400px;margin:0 auto;display:block;"></svg>
+        <div style="display:flex;justify-content:center;gap:20px;margin-top:12px;"><div style="display:flex;align-items:center;gap:5px;cursor:pointer;" onclick="showCat('scraped')"><div style="width:10px;height:10px;border-radius:3px;background:var(--green);"></div><span style="font-size:11px;color:var(--text2);">Scraped</span></div><div style="display:flex;align-items:center;gap:5px;cursor:pointer;" onclick="showCat('reusable')"><div style="width:10px;height:10px;border-radius:3px;background:var(--accent);"></div><span style="font-size:11px;color:var(--text2);">Reusable</span></div><div style="display:flex;align-items:center;gap:5px;cursor:pointer;" onclick="showCat('new')"><div style="width:10px;height:10px;border-radius:3px;background:var(--orange);"></div><span style="font-size:11px;color:var(--text2);">New Build</span></div></div>
+      </div>
+      <div id="source-detail" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;max-height:340px;overflow-y:auto;"></div>
+    </div>
+  </div>
+  <div style="margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;"><div style="font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text2);margin-bottom:14px;">Effort by Market</div><div id="market-bars"></div></div>
+</div>
+
+<div class="panel" id="brief1">
+  <div class="section-header"><h2>Brief 1 — Global Trend Tracker</h2><p>Volume + timestamps for trend analysis. Social platforms via Apify for cost-effective scraping. ✓ button selects platform for cost estimator.</p></div>
+  <div style="margin-bottom:20px;overflow-x:auto;"><table class="matrix-table"><thead><tr><th></th><th>Similac</th><th>PediaSure</th><th>Ensure</th><th>Glucerna</th><th>Key Competitors</th></tr></thead><tbody>
+    <tr><td style="text-align:left;font-weight:700">Mexico</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td style="text-align:left;font-size:10px;color:var(--text2)">Enfamil, NAN, S-26, Frisolac, Nido, Boost</td></tr>
+    <tr><td style="text-align:left;font-weight:700">CADR</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td style="text-align:left;font-size:10px;color:var(--text2)">Enfamil, NAN, Boost</td></tr>
+    <tr><td style="text-align:left;font-weight:700">Philippines</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td style="text-align:left;font-size:10px;color:var(--text2)">Enfamil, NAN, Lactum, Bonakid, Promil, Bear Brand</td></tr>
+    <tr><td style="text-align:left;font-weight:700">Vietnam</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td style="text-align:left;font-size:10px;color:var(--text2)">Enfamil, NAN, Friso, Meiji, Morinaga, Vinamilk</td></tr>
+    <tr><td style="text-align:left;font-weight:700">India</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td><td style="text-align:left;font-size:10px;color:var(--text2)">Enfamil, NAN, Lactogen, Aptamil, Horlicks, Protinex</td></tr>
+    <tr><td style="text-align:left;font-weight:700">Saudi Arabia</td><td class="check">✓</td><td class="check">✓</td><td class="cross">✗</td><td class="cross">✗</td><td style="text-align:left;font-size:10px;color:var(--text2)">Enfamil, NAN, Aptamil, Bebelac</td></tr>
+    <tr><td style="text-align:left;font-weight:700">China</td><td class="cross">✗</td><td class="cross">✗</td><td class="check">✓</td><td class="check">✓</td><td style="text-align:left;font-size:10px;color:var(--text2)">Boost, Yili, Mengniu, By-Health</td></tr>
+  </tbody></table></div>
+  <div class="filters"><span class="filter-label">Market:</span><button class="filter-btn active" data-filter="b1-market" data-value="all">All</button><button class="filter-btn" data-filter="b1-market" data-value="Mexico">Mexico</button><button class="filter-btn" data-filter="b1-market" data-value="CADR">CADR</button><button class="filter-btn" data-filter="b1-market" data-value="Philippines">Philippines</button><button class="filter-btn" data-filter="b1-market" data-value="Vietnam">Vietnam</button><button class="filter-btn" data-filter="b1-market" data-value="India">India</button><button class="filter-btn" data-filter="b1-market" data-value="Saudi Arabia">Saudi Arabia</button><button class="filter-btn" data-filter="b1-market" data-value="China">China</button><span style="margin-left:auto"></span><button class="filter-btn" id="b1-sort-rank" onclick="toggleSort('b1')">⚡ AI Ranking</button></div>
+  <div class="table-wrap"><table id="b1-table"><thead><tr></tr></thead><tbody></tbody></table></div>
+</div>
+
+<div class="panel" id="brief2">
+  <div class="section-header"><h2>Brief 2 — IMF Pilot (Similac Only)</h2><p>Emotional verbatims from mom communities. Forums &gt; product reviews. Now includes Vietnam &amp; Philippines.</p></div>
+  <div style="margin-bottom:20px;overflow-x:auto;"><table class="matrix-table"><thead><tr><th></th><th>Similac</th><th>Key Competitors</th><th>Focus Areas</th></tr></thead><tbody>
+    <tr><td style="text-align:left;font-weight:700">Mexico</td><td class="check">✓</td><td style="text-align:left;font-size:10px;color:var(--text2)">Enfamil, NAN, S-26, Frisolac</td><td style="text-align:left;font-size:10px;color:var(--text2)">Trust, guilt, HCP influence, switching</td></tr>
+    <tr><td style="text-align:left;font-weight:700">CADR</td><td class="check">✓</td><td style="text-align:left;font-size:10px;color:var(--text2)">Enfamil, NAN</td><td style="text-align:left;font-size:10px;color:var(--text2)">Rolled up, Facebook-dominated</td></tr>
+    <tr><td style="text-align:left;font-weight:700">Philippines</td><td class="check">✓</td><td style="text-align:left;font-size:10px;color:var(--text2)">Enfamil, NAN, S-26, Lactum</td><td style="text-align:left;font-size:10px;color:var(--text2)">Emotional community, strong forum culture</td></tr>
+    <tr><td style="text-align:left;font-weight:700">Vietnam</td><td class="check">✓</td><td style="text-align:left;font-size:10px;color:var(--text2)">Enfamil, NAN, Friso, Vinamilk</td><td style="text-align:left;font-size:10px;color:var(--text2)">Webtretho gold mine, Lamchame.com</td></tr>
+    <tr><td style="text-align:left;font-weight:700">India</td><td class="check">✓</td><td style="text-align:left;font-size:10px;color:var(--text2)">Enfamil, NAN, Lactogen, Aptamil</td><td style="text-align:left;font-size:10px;color:var(--text2)">IMS Act → organic conversation key</td></tr>
+    <tr><td style="text-align:left;font-weight:700">Saudi Arabia</td><td class="check">✓</td><td style="text-align:left;font-size:10px;color:var(--text2)">Enfamil, NAN, Aptamil, Bebelac</td><td style="text-align:left;font-size:10px;color:var(--text2)">Arabic, Twitter/X dominant, cultural trust</td></tr>
+  </tbody></table></div>
+  <div class="filters"><span class="filter-label">Market:</span><button class="filter-btn active" data-filter="b2-market" data-value="all">All</button><button class="filter-btn" data-filter="b2-market" data-value="Mexico">Mexico</button><button class="filter-btn" data-filter="b2-market" data-value="CADR">CADR</button><button class="filter-btn" data-filter="b2-market" data-value="Philippines">Philippines</button><button class="filter-btn" data-filter="b2-market" data-value="Vietnam">Vietnam</button><button class="filter-btn" data-filter="b2-market" data-value="India">India</button><button class="filter-btn" data-filter="b2-market" data-value="Saudi Arabia">Saudi Arabia</button><span style="margin-left:auto"></span><button class="filter-btn" id="b2-sort-rank" onclick="toggleSort('b2')">⚡ AI Ranking</button></div>
+  <div class="table-wrap"><table id="b2-table"><thead><tr></tr></thead><tbody></tbody></table></div>
+</div>
+
+<div class="panel" id="durex">
+  <div class="section-header"><h2>Durex Precedent</h2><p>Green = actually scraped. Filter by category and country.</p></div>
+  <div class="filters"><span class="filter-label">Category:</span><button class="filter-btn active" data-filter="d-cat" data-value="all">All</button><button class="filter-btn" data-filter="d-cat" data-value="Condoms">Condoms</button><button class="filter-btn" data-filter="d-cat" data-value="Lubes">Lubes</button><button class="filter-btn" data-filter="d-cat" data-value="Performance Booster">Perf Booster</button><button class="filter-btn" data-filter="d-cat" data-value="Intimate Care">Intimate Care</button></div>
+  <div class="filters"><span class="filter-label">Country:</span><button class="filter-btn active" data-filter="d-mkt" data-value="all">All</button><button class="filter-btn" data-filter="d-mkt" data-value="UK">UK</button><button class="filter-btn" data-filter="d-mkt" data-value="USA">USA</button><button class="filter-btn" data-filter="d-mkt" data-value="India">India</button><button class="filter-btn" data-filter="d-mkt" data-value="Vietnam">Vietnam</button><button class="filter-btn" data-filter="d-mkt" data-value="Brazil">Brazil</button><button class="filter-btn" data-filter="d-mkt" data-value="Spain">Spain</button></div>
+  <div class="table-wrap"><table id="d-table"><thead><tr><th>Market</th><th>Category</th><th>Platform</th><th>Est. Volume</th><th>Status</th></tr></thead><tbody></tbody></table></div>
+</div>
+
+<div class="panel" id="cost">
+  <div class="section-header"><h2>💰 Cost Estimator</h2><p>Platforms you selected (✓) from Brief 1 &amp; 2 appear here. Add costs per platform. Durex spider overlap detected automatically.</p></div>
+  <div id="cost-empty" style="text-align:center;padding:60px;color:var(--text2);font-size:14px;">No platforms selected yet. Go to <strong>Brief 1</strong> or <strong>Brief 2</strong> and click the ✓ button on platforms to scrape.</div>
+  <div id="cost-content" style="display:none;">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;">
+      <div class="card"><div class="card-label">Selected</div><div class="card-value green" id="cost-count">0</div></div>
+      <div class="card"><div class="card-label">Durex Overlap</div><div class="card-value" id="cost-overlap">0</div></div>
+      <div class="card"><div class="card-label">New Builds</div><div class="card-value orange" id="cost-new">0</div></div>
+      <div class="card"><div class="card-label">Total Est. Cost</div><div class="cost-total" id="cost-total">$0</div></div>
+    </div>
+    <div class="table-wrap"><table id="cost-table"><thead><tr><th>Brief</th><th>Market</th><th>Platform</th><th>Type</th><th>Durex Spider?</th><th>Apify Cost</th><th>Custom Cost ($)</th><th>Remove</th></tr></thead><tbody></tbody></table></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px;">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:24px;">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text2);margin-bottom:14px;">Cost by Market</div>
+        <div id="cost-market-bars"></div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:24px;">
+        <div style="font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text2);margin-bottom:14px;">Cost by Source Type</div>
+        <div id="cost-type-bars"></div>
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+          <div style="font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text2);margin-bottom:10px;">Build Status Breakdown</div>
+          <div id="cost-status-bars"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const durexScraped=new Set(["Amazon India","Amazon MX","Amazon Brazil","Shopee VN","Shopee PH","Lazada VN","Lazada PH","Flipkart","Mercado Libre","Mercado Livre"]);
+const durexAdaptable=new Set(["YouTube","TikTok","Reddit","Tiki","Instagram","Twitter/X","Amazon","Facebook"]);
+function isDurex(n){if(durexScraped.has(n))return"scraped";for(const d of durexAdaptable)if(n.toLowerCase().includes(d.toLowerCase()))return"reusable";return"new"}
+// ── Category to Brand mapping ──
+function catBrands(cat){
+  const map={
+    'Infant Formula':'Similac',
+    'Pediatric':'PediaSure',
+    'Adult Nutrition':'Ensure',
+    'Diabetes':'Glucerna',
+    'IMF + Pediatric':'Similac, PediaSure',
+    'All Categories':'Similac, PediaSure, Ensure, Glucerna',
+  };
+  return map[cat]||cat;
+}
+</script>
+<script id="data-script">
+// Paste the data inline to keep it in one file
+</script>
+<script>
+// This is split for readability but it's all one file
+
+// ── DATA ──
+const b1Data=[
+{m:"Mexico",cat:"Infant Formula",p:"Amazon MX",t:"E-commerce",vol:"3,000-5,000+",feas:"HIGH",url:"https://www.amazon.com.mx/s?k=formula+infantil",n:"Durex spider reusable",rank:94,apify:"N/A"},
+{m:"Mexico",cat:"Infant Formula",p:"Mercado Libre",t:"E-commerce",vol:"1,000-3,000+",feas:"HIGH",url:"https://listado.mercadolibre.com.mx/formula-infantil",n:"Durex spider adaptable",rank:87,apify:"N/A"},
+{m:"Mexico",cat:"Infant Formula",p:"Walmart MX",t:"E-commerce",vol:"500-1,000",feas:"MEDIUM",url:"https://www.walmart.com.mx/search?q=formula+infantil",n:"New spider",rank:58,apify:"N/A"},
+{m:"Mexico",cat:"All Categories",p:"Facebook",t:"Social",vol:"10,000-30,000+",feas:"HIGH (Apify)",url:"https://www.facebook.com/search/posts/?q=formula+infantil+mexico",n:"Apify FB Scraper",rank:80,apify:"~$40/100K"},
+{m:"Mexico",cat:"All Categories",p:"YouTube",t:"Social",vol:"5,000-15,000",feas:"HIGH (Apify)",url:"https://www.youtube.com/results?search_query=formula+infantil+mexico",n:"Apify YT Scraper",rank:82,apify:"~$10/10K"},
+{m:"Mexico",cat:"All Categories",p:"TikTok",t:"Social",vol:"10,000-30,000",feas:"HIGH (Apify)",url:"https://www.tiktok.com/search?q=formula+infantil+mexico",n:"Apify TT Scraper",rank:72,apify:"~$25/50K"},
+{m:"Mexico",cat:"All Categories",p:"Instagram",t:"Social",vol:"3,000-8,000",feas:"HIGH (Apify)",url:"https://www.instagram.com/explore/tags/formulainfantil/",n:"Apify IG Scraper",rank:68,apify:"~$30/50K"},
+{m:"Mexico",cat:"All Categories",p:"Twitter/X",t:"Social",vol:"2,000-5,000",feas:"HIGH (Apify)",url:"https://twitter.com/search?q=formula+infantil+mexico",n:"Apify X Scraper",rank:62,apify:"~$15/50K"},
+{m:"Mexico",cat:"All Categories",p:"Reddit",t:"Social",vol:"500-1,500",feas:"HIGH",url:"https://www.reddit.com/search/?q=formula+infantil+mexico",n:"Free API or Apify",rank:55,apify:"Free/~$5"},
+{m:"Mexico",cat:"Infant Formula",p:"BabyCenter Español",t:"Forum",vol:"5,000-10,000",feas:"HIGH",url:"https://espanol.babycenter.com/",n:"Threaded forum",rank:88,apify:"N/A"},
+{m:"Mexico",cat:"Pediatric",p:"Amazon MX",t:"E-commerce",vol:"1,500-3,000+",feas:"HIGH",url:"https://www.amazon.com.mx/s?k=PediaSure",n:"",rank:84,apify:"N/A"},
+{m:"Mexico",cat:"Adult Nutrition",p:"Amazon MX",t:"E-commerce",vol:"2,000-5,000+",feas:"HIGH",url:"https://www.amazon.com.mx/s?k=Ensure",n:"",rank:88,apify:"N/A"},
+{m:"Mexico",cat:"Diabetes",p:"Amazon MX",t:"E-commerce",vol:"800-2,000+",feas:"HIGH",url:"https://www.amazon.com.mx/s?k=Glucerna",n:"Niche",rank:76,apify:"N/A"},
+{m:"CADR",cat:"All Categories",p:"Facebook",t:"Social",vol:"3,000-8,000",feas:"HIGH (Apify)",url:"https://www.facebook.com/search/posts/?q=formula+infantil+centroamerica",n:"Primary channel CADR",rank:52,apify:"~$20/50K"},
+{m:"CADR",cat:"All Categories",p:"YouTube",t:"Social",vol:"1,000-3,000",feas:"HIGH (Apify)",url:"https://www.youtube.com/results?search_query=formula+infantil+centroamerica",n:"",rank:44,apify:"~$10/10K"},
+{m:"CADR",cat:"All Categories",p:"BabyCenter Español",t:"Forum",vol:"1,000-3,000",feas:"MEDIUM",url:"https://espanol.babycenter.com/",n:"Shared with MX",rank:48,apify:"N/A"},
+{m:"Philippines",cat:"Infant Formula",p:"Shopee PH",t:"E-commerce",vol:"5,000-15,000+",feas:"HIGH",url:"https://shopee.ph/search?keyword=infant+formula",n:"Durex spider reusable",rank:95,apify:"N/A"},
+{m:"Philippines",cat:"Infant Formula",p:"Lazada PH",t:"E-commerce",vol:"3,000-8,000+",feas:"HIGH",url:"https://www.lazada.com.ph/catalog/?q=infant+formula",n:"Durex spider reusable",rank:90,apify:"N/A"},
+{m:"Philippines",cat:"Infant Formula",p:"Smart Parenting PH",t:"Forum",vol:"3,000-8,000",feas:"HIGH",url:"https://www.smartparenting.com.ph/parentchat/index.php?board=23.0",n:"Dedicated formula board",rank:93,apify:"N/A"},
+{m:"Philippines",cat:"Infant Formula",p:"theAsianparent PH",t:"Forum",vol:"2,000-5,000",feas:"HIGH",url:"https://ph.theasianparent.com/search?q=infant+formula",n:"Strong community",rank:85,apify:"N/A"},
+{m:"Philippines",cat:"All Categories",p:"Facebook",t:"Social",vol:"15,000-50,000+",feas:"HIGH (Apify)",url:"https://www.facebook.com/search/posts/?q=formula+milk+philippines",n:"Dominant platform PH",rank:78,apify:"~$40/100K"},
+{m:"Philippines",cat:"All Categories",p:"YouTube",t:"Social",vol:"8,000-20,000",feas:"HIGH (Apify)",url:"https://www.youtube.com/results?search_query=infant+formula+philippines",n:"",rank:76,apify:"~$10/10K"},
+{m:"Philippines",cat:"All Categories",p:"TikTok",t:"Social",vol:"5,000-15,000",feas:"HIGH (Apify)",url:"https://www.tiktok.com/search?q=infant+formula+philippines",n:"",rank:70,apify:"~$25/50K"},
+{m:"Philippines",cat:"All Categories",p:"Instagram",t:"Social",vol:"3,000-8,000",feas:"HIGH (Apify)",url:"https://www.instagram.com/explore/tags/formulamilk/",n:"",rank:64,apify:"~$30/50K"},
+{m:"Vietnam",cat:"Infant Formula",p:"Shopee VN",t:"E-commerce",vol:"8,000-20,000+",feas:"HIGH",url:"https://shopee.vn/search?keyword=s%E1%BB%AFa+c%C3%B4ng+th%E1%BB%A9c",n:"Durex spider reusable",rank:96,apify:"N/A"},
+{m:"Vietnam",cat:"Infant Formula",p:"Lazada VN",t:"E-commerce",vol:"2,000-5,000",feas:"HIGH",url:"https://www.lazada.vn/catalog/?q=sua+cong+thuc",n:"Durex spider reusable",rank:86,apify:"N/A"},
+{m:"Vietnam",cat:"Infant Formula",p:"Con Cung",t:"E-commerce",vol:"3,000-8,000+",feas:"HIGH",url:"https://concung.com/search?q=sua+cong+thuc",n:"Major baby retailer. New spider.",rank:89,apify:"N/A"},
+{m:"Vietnam",cat:"Infant Formula",p:"Tiki",t:"E-commerce",vol:"1,000-3,000",feas:"HIGH",url:"https://tiki.vn/search?q=sua+cong+thuc",n:"Reusable pattern",rank:72,apify:"N/A"},
+{m:"Vietnam",cat:"Infant Formula",p:"Webtretho",t:"Forum",vol:"10,000-30,000+",feas:"HIGH",url:"https://www.webtretho.com/f/sua-va-bot-cho-be-tu-1-tuoi-tro-len",n:"Gold mine — #1 VN mom forum",rank:97,apify:"N/A"},
+{m:"Vietnam",cat:"Infant Formula",p:"Lamchame.com",t:"Forum",vol:"3,000-8,000",feas:"HIGH",url:"https://www.lamchame.com/forum/forums/sua-cho-be.99/",n:"#2 VN mom forum. New spider.",rank:82,apify:"N/A"},
+{m:"Vietnam",cat:"All Categories",p:"Facebook",t:"Social",vol:"10,000-40,000+",feas:"HIGH (Apify)",url:"https://www.facebook.com/groups/reviewsuacongthuc/",n:"Active formula groups",rank:74,apify:"~$40/100K"},
+{m:"Vietnam",cat:"All Categories",p:"YouTube",t:"Social",vol:"5,000-15,000",feas:"HIGH (Apify)",url:"https://www.youtube.com/results?search_query=sua+cong+thuc+vietnam",n:"",rank:70,apify:"~$10/10K"},
+{m:"Vietnam",cat:"All Categories",p:"TikTok",t:"Social",vol:"8,000-25,000",feas:"HIGH (Apify)",url:"https://www.tiktok.com/search?q=sua+cong+thuc",n:"",rank:68,apify:"~$25/50K"},
+{m:"India",cat:"Infant Formula",p:"Amazon India",t:"E-commerce",vol:"5,000-15,000+",feas:"HIGH",url:"https://www.amazon.in/s?k=infant+formula",n:"Durex spider reusable",rank:94,apify:"N/A"},
+{m:"India",cat:"Infant Formula",p:"Flipkart",t:"E-commerce",vol:"3,000-10,000+",feas:"HIGH",url:"https://www.flipkart.com/search?q=infant+formula",n:"Durex spider reusable",rank:90,apify:"N/A"},
+{m:"India",cat:"Infant Formula",p:"FirstCry",t:"E-commerce",vol:"8,000-25,000+",feas:"HIGH",url:"https://www.firstcry.com/search?q=infant+formula",n:"#1 baby platform. New spider. HIGH priority.",rank:96,apify:"N/A"},
+{m:"India",cat:"Infant Formula",p:"Quora India",t:"Forum",vol:"2,000-6,000",feas:"HIGH",url:"https://www.quora.com/search?q=infant+formula+india",n:"Very active Q&A",rank:78,apify:"N/A"},
+{m:"India",cat:"Infant Formula",p:"BabyChakra",t:"Forum",vol:"1,000-3,000",feas:"MEDIUM",url:"https://www.babychakra.com/",n:"Indian parenting community",rank:70,apify:"N/A"},
+{m:"India",cat:"Infant Formula",p:"MomJunction",t:"Forum",vol:"1,000-3,000",feas:"MEDIUM",url:"https://www.momjunction.com/",n:"Reviews + comments",rank:65,apify:"N/A"},
+{m:"India",cat:"Adult Nutrition",p:"Amazon India",t:"E-commerce",vol:"5,000-15,000+",feas:"HIGH",url:"https://www.amazon.in/s?k=Ensure",n:"",rank:93,apify:"N/A"},
+{m:"India",cat:"Adult Nutrition",p:"1mg",t:"E-commerce",vol:"1,000-3,000",feas:"MEDIUM",url:"https://www.1mg.com/search/all?name=Ensure",n:"Pharmacy reviews",rank:62,apify:"N/A"},
+{m:"India",cat:"Diabetes",p:"Amazon India",t:"E-commerce",vol:"3,000-8,000+",feas:"HIGH",url:"https://www.amazon.in/s?k=Glucerna",n:"",rank:86,apify:"N/A"},
+{m:"India",cat:"All Categories",p:"YouTube",t:"Social",vol:"10,000-30,000",feas:"HIGH (Apify)",url:"https://www.youtube.com/results?search_query=infant+formula+india",n:"Massive volume",rank:85,apify:"~$10/10K"},
+{m:"India",cat:"All Categories",p:"Facebook",t:"Social",vol:"5,000-15,000",feas:"HIGH (Apify)",url:"https://www.facebook.com/search/posts/?q=infant+formula+india",n:"",rank:72,apify:"~$40/100K"},
+{m:"India",cat:"All Categories",p:"Instagram Reels",t:"Social",vol:"3,000-8,000",feas:"HIGH (Apify)",url:"https://www.instagram.com/explore/tags/infantformula/",n:"TikTok banned → Reels",rank:68,apify:"~$30/50K"},
+{m:"India",cat:"All Categories",p:"Twitter/X",t:"Social",vol:"2,000-5,000",feas:"HIGH (Apify)",url:"https://twitter.com/search?q=infant+formula+india",n:"",rank:58,apify:"~$15/50K"},
+{m:"India",cat:"All Categories",p:"Reddit",t:"Social",vol:"500-1,500",feas:"HIGH",url:"https://www.reddit.com/r/IndianParenting/search/?q=formula",n:"r/IndianParenting",rank:60,apify:"Free/~$5"},
+{m:"Saudi Arabia",cat:"IMF + Pediatric",p:"Amazon.sa",t:"E-commerce",vol:"500-1,500",feas:"MEDIUM",url:"https://www.amazon.sa/s?k=infant+formula",n:"Adaptable from Durex Amazon",rank:52,apify:"N/A"},
+{m:"Saudi Arabia",cat:"IMF + Pediatric",p:"Noon.com",t:"E-commerce",vol:"300-800",feas:"MEDIUM",url:"https://www.noon.com/saudi-en/search/?q=infant+formula",n:"New spider",rank:46,apify:"N/A"},
+{m:"Saudi Arabia",cat:"IMF + Pediatric",p:"supermama.me",t:"Forum",vol:"300-1,000",feas:"LOW-MED",url:"https://www.supermama.me/",n:"Arabic parenting. RTL.",rank:40,apify:"N/A"},
+{m:"Saudi Arabia",cat:"IMF + Pediatric",p:"Twitter/X",t:"Social",vol:"3,000-10,000",feas:"HIGH (Apify)",url:"https://twitter.com/search?q=%D8%AD%D9%84%D9%8A%D8%A8+%D8%A3%D8%B7%D9%81%D8%A7%D9%84",n:"Most active social KSA",rank:60,apify:"~$15/50K"},
+{m:"Saudi Arabia",cat:"IMF + Pediatric",p:"YouTube",t:"Social",vol:"2,000-5,000",feas:"HIGH (Apify)",url:"https://www.youtube.com/results?search_query=%D8%AD%D9%84%D9%8A%D8%A8+%D8%A3%D8%B7%D9%81%D8%A7%D9%84",n:"",rank:50,apify:"~$10/10K"},
+{m:"Saudi Arabia",cat:"IMF + Pediatric",p:"Instagram",t:"Social",vol:"1,000-3,000",feas:"HIGH (Apify)",url:"https://www.instagram.com/explore/tags/%D8%AD%D9%84%D9%8A%D8%A8_%D8%A3%D8%B7%D9%81%D8%A7%D9%84/",n:"Mom influencers",rank:48,apify:"~$30/50K"},
+{m:"Saudi Arabia",cat:"IMF + Pediatric",p:"TikTok",t:"Social",vol:"1,500-4,000",feas:"HIGH (Apify)",url:"https://www.tiktok.com/search?q=%D8%AD%D9%84%D9%8A%D8%A8+%D8%A3%D8%B7%D9%81%D8%A7%D9%84",n:"Growing KSA",rank:45,apify:"~$25/50K"},
+{m:"China",cat:"Adult Nutrition",p:"Tmall/Taobao",t:"E-commerce",vol:"30,000-100,000+",feas:"LOW-MED",url:"https://s.taobao.com/search?q=Ensure",n:"Anti-scraping. Consider vendor.",rank:75,apify:"N/A"},
+{m:"China",cat:"Adult Nutrition",p:"JD.com",t:"E-commerce",vol:"20,000-60,000+",feas:"LOW-MED",url:"https://search.jd.com/Search?keyword=%E5%AE%89%E7%B4%A0",n:"Anti-scraping",rank:72,apify:"N/A"},
+{m:"China",cat:"Adult Nutrition",p:"Xiaohongshu (RED)",t:"Social",vol:"50,000-200,000+",feas:"LOW-MED",url:"https://www.xiaohongshu.com/",n:"Best for nutrition. Bot detection.",rank:80,apify:"N/A"},
+{m:"China",cat:"Diabetes",p:"Tmall/Taobao",t:"E-commerce",vol:"15,000-50,000+",feas:"LOW-MED",url:"https://s.taobao.com/search?q=Glucerna",n:"",rank:70,apify:"N/A"},
+{m:"China",cat:"All Categories",p:"Weibo",t:"Social",vol:"10,000-40,000",feas:"MEDIUM",url:"https://s.weibo.com/weibo?q=%E5%AE%89%E7%B4%A0",n:"Chinese Twitter",rank:60,apify:"N/A"},
+{m:"China",cat:"All Categories",p:"Douyin",t:"Social",vol:"20,000-80,000",feas:"LOW-MED",url:"https://www.douyin.com/",n:"Chinese TikTok",rank:65,apify:"N/A"},
+{m:"China",cat:"All Categories",p:"Zhihu",t:"Forum",vol:"3,000-10,000",feas:"MEDIUM",url:"https://www.zhihu.com/search?type=content&q=%E5%AE%89%E7%B4%A0",n:"Chinese Q&A",rank:58,apify:"N/A"},
+];
+
+const b2Data=[
+{m:"Mexico",s:"BabyCenter Español",t:"Forum",why:"Threaded mom discussions on trust, switching, guilt.",vol:"5,000-10,000",lang:"Spanish",url:"https://espanol.babycenter.com/",rank:94,apify:"N/A"},
+{m:"Mexico",s:"Facebook",t:"Social",why:"Where MX moms share real experiences, guilt/reassurance.",vol:"10,000-30,000+",lang:"Spanish",url:"https://www.facebook.com/search/posts/?q=formula+infantil+similac+mexico",rank:82,apify:"~$40/100K"},
+{m:"Mexico",s:"YouTube",t:"Social",why:"Mom vlogs, formula comparisons. Emotional comments.",vol:"5,000-15,000",lang:"Spanish",url:"https://www.youtube.com/results?search_query=similac+formula+mexico",rank:75,apify:"~$10/10K"},
+{m:"Mexico",s:"TikTok",t:"Social",why:"Short-form mom content, real-time reactions.",vol:"10,000-30,000",lang:"Spanish",url:"https://www.tiktok.com/search?q=similac+formula+mexico",rank:65,apify:"~$25/50K"},
+{m:"Mexico",s:"Instagram",t:"Social",why:"Mom influencer content, emotional comments.",vol:"3,000-8,000",lang:"Spanish",url:"https://www.instagram.com/explore/tags/similac/",rank:60,apify:"~$30/50K"},
+{m:"Mexico",s:"Amazon MX",t:"E-commerce",why:"Reviews with trust signals.",vol:"500-1,500",lang:"Spanish",url:"https://www.amazon.com.mx/s?k=Similac",rank:62,apify:"N/A"},
+{m:"Mexico",s:"Twitter/X",t:"Social",why:"Real-time opinions, complaints.",vol:"2,000-5,000",lang:"Spanish",url:"https://twitter.com/search?q=Similac+mexico",rank:55,apify:"~$15/50K"},
+{m:"CADR",s:"Facebook",t:"Social",why:"Primary digital channel for CADR verbatims.",vol:"3,000-8,000",lang:"Spanish",url:"https://www.facebook.com/search/posts/?q=formula+infantil+centroamerica",rank:55,apify:"~$20/50K"},
+{m:"CADR",s:"BabyCenter Español",t:"Forum",why:"Shared with MX. Some CADR threads.",vol:"1,000-3,000",lang:"Spanish",url:"https://espanol.babycenter.com/",rank:48,apify:"N/A"},
+{m:"CADR",s:"YouTube",t:"Social",why:"Mom content in Spanish.",vol:"1,000-3,000",lang:"Spanish",url:"https://www.youtube.com/results?search_query=formula+similac+centroamerica",rank:42,apify:"~$10/10K"},
+{m:"Philippines",s:"Smart Parenting PH",t:"Forum",why:"Dedicated formula board. Moms compare brands, discuss trust.",vol:"3,000-8,000",lang:"English/Taglish",url:"https://www.smartparenting.com.ph/parentchat/index.php?board=23.0",rank:97,apify:"N/A"},
+{m:"Philippines",s:"theAsianparent PH",t:"Forum",why:"Active community. Emotional + practical advice.",vol:"2,000-5,000",lang:"English/Taglish",url:"https://ph.theasianparent.com/search?q=similac",rank:90,apify:"N/A"},
+{m:"Philippines",s:"Facebook",t:"Social",why:"Massive Filipino mom community. Very emotional.",vol:"15,000-50,000+",lang:"English/Taglish",url:"https://www.facebook.com/search/posts/?q=similac+philippines",rank:80,apify:"~$40/100K"},
+{m:"Philippines",s:"Shopee PH",t:"E-commerce",why:"Product reviews, satisfaction signals.",vol:"2,000-6,000",lang:"English/Taglish",url:"https://shopee.ph/search?keyword=Similac",rank:72,apify:"N/A"},
+{m:"Philippines",s:"YouTube",t:"Social",why:"Mom vlogs, formula reviews with emotional comments.",vol:"5,000-12,000",lang:"English/Taglish",url:"https://www.youtube.com/results?search_query=similac+philippines",rank:74,apify:"~$10/10K"},
+{m:"Philippines",s:"TikTok",t:"Social",why:"Growing mom community, formula unboxing.",vol:"3,000-8,000",lang:"English/Taglish",url:"https://www.tiktok.com/search?q=similac+philippines",rank:64,apify:"~$25/50K"},
+{m:"Philippines",s:"Instagram",t:"Social",why:"Mom influencer content, formula journey posts.",vol:"2,000-5,000",lang:"English/Taglish",url:"https://www.instagram.com/explore/tags/similacph/",rank:58,apify:"~$30/50K"},
+{m:"Philippines",s:"Reddit r/Philippines",t:"Forum",why:"Candid anonymous. Formula guilt, HCP trust.",vol:"300-800",lang:"English",url:"https://www.reddit.com/r/Philippines/search/?q=similac",rank:56,apify:"Free/~$5"},
+{m:"Vietnam",s:"Webtretho",t:"Forum",why:"GOLD MINE — largest VN mom forum. Deep emotional threads.",vol:"10,000-30,000+",lang:"Vietnamese",url:"https://www.webtretho.com/f/sua-va-bot-cho-be-tu-1-tuoi-tro-len",rank:98,apify:"N/A"},
+{m:"Vietnam",s:"Lamchame.com",t:"Forum",why:"#2 VN mom forum. Complementary to Webtretho.",vol:"3,000-8,000",lang:"Vietnamese",url:"https://www.lamchame.com/forum/forums/sua-cho-be.99/",rank:85,apify:"N/A"},
+{m:"Vietnam",s:"theAsianparent VN",t:"Forum",why:"Vietnamese parenting community. Formula advice.",vol:"1,500-4,000",lang:"Vietnamese",url:"https://vn.theasianparent.com/search?q=similac",rank:78,apify:"N/A"},
+{m:"Vietnam",s:"Con Cung",t:"E-commerce",why:"Major baby retailer. Detailed reviews.",vol:"2,000-5,000",lang:"Vietnamese",url:"https://concung.com/search?q=Similac",rank:82,apify:"N/A"},
+{m:"Vietnam",s:"Shopee VN",t:"E-commerce",why:"Largest e-commerce. Review volume.",vol:"3,000-8,000",lang:"Vietnamese",url:"https://shopee.vn/search?keyword=Similac",rank:76,apify:"N/A"},
+{m:"Vietnam",s:"Facebook",t:"Social",why:"Active formula review groups.",vol:"10,000-40,000+",lang:"Vietnamese",url:"https://www.facebook.com/groups/reviewsuacongthuc/",rank:74,apify:"~$40/100K"},
+{m:"Vietnam",s:"YouTube",t:"Social",why:"Mom vlogs in Vietnamese.",vol:"3,000-10,000",lang:"Vietnamese",url:"https://www.youtube.com/results?search_query=similac+sua+cong+thuc",rank:66,apify:"~$10/10K"},
+{m:"Vietnam",s:"TikTok",t:"Social",why:"Growing mom content.",vol:"5,000-15,000",lang:"Vietnamese",url:"https://www.tiktok.com/search?q=similac+sua+cong+thuc",rank:62,apify:"~$25/50K"},
+{m:"India",s:"FirstCry",t:"E-commerce",why:"Largest baby platform. Long emotional reviews.",vol:"3,000-10,000+",lang:"English",url:"https://www.firstcry.com/search?q=Similac",rank:94,apify:"N/A"},
+{m:"India",s:"BabyChakra",t:"Forum",why:"Indian mom community. Formula guilt, trust.",vol:"1,000-3,000",lang:"English",url:"https://www.babychakra.com/search?q=similac",rank:80,apify:"N/A"},
+{m:"India",s:"Momspresso",t:"Forum",why:"Mom blogger platform. Personal essays.",vol:"500-2,000",lang:"English/Hindi",url:"https://momspresso.com/search?q=similac+formula",rank:82,apify:"N/A"},
+{m:"India",s:"BabyCenter India",t:"Forum",why:"Formula feeding groups. Trust, guilt, HCP.",vol:"2,000-5,000",lang:"English",url:"https://www.babycenter.in/",rank:86,apify:"N/A"},
+{m:"India",s:"Quora India",t:"Forum",why:"Active parenting Q&A. Similac vs competitors.",vol:"2,000-6,000",lang:"English",url:"https://www.quora.com/search?q=Similac+india",rank:82,apify:"N/A"},
+{m:"India",s:"MomJunction",t:"Forum",why:"Review articles + extensive comment sections.",vol:"1,000-3,000",lang:"English",url:"https://www.momjunction.com/",rank:68,apify:"N/A"},
+{m:"India",s:"Amazon India",t:"E-commerce",why:"Large review base. Trust + pediatrician recs.",vol:"2,000-6,000",lang:"English",url:"https://www.amazon.in/s?k=Similac",rank:74,apify:"N/A"},
+{m:"India",s:"YouTube",t:"Social",why:"Mom vlogs, pediatrician videos. Comment goldmine.",vol:"8,000-20,000",lang:"English/Hindi",url:"https://www.youtube.com/results?search_query=similac+india",rank:78,apify:"~$10/10K"},
+{m:"India",s:"Facebook",t:"Social",why:"Parenting groups, formula discussions.",vol:"5,000-15,000",lang:"English/Hindi",url:"https://www.facebook.com/search/posts/?q=similac+india",rank:70,apify:"~$40/100K"},
+{m:"India",s:"Instagram Reels",t:"Social",why:"Mom content. TikTok banned → Reels.",vol:"3,000-8,000",lang:"English/Hindi",url:"https://www.instagram.com/explore/tags/similacindia/",rank:64,apify:"~$30/50K"},
+{m:"India",s:"Reddit r/IndianParenting",t:"Forum",why:"Candid. Formula guilt, HCP trust, switching.",vol:"300-800",lang:"English",url:"https://www.reddit.com/r/IndianParenting/search/?q=similac",rank:62,apify:"Free/~$5"},
+{m:"India",s:"Twitter/X",t:"Social",why:"Quick brand sentiment, complaints.",vol:"1,000-3,000",lang:"English",url:"https://twitter.com/search?q=Similac+india",rank:52,apify:"~$15/50K"},
+{m:"Saudi Arabia",s:"supermama.me",t:"Forum",why:"Arabic parenting. Cultural trust context.",vol:"300-1,000",lang:"Arabic",url:"https://www.supermama.me/",rank:62,apify:"N/A"},
+{m:"Saudi Arabia",s:"Hawaworld",t:"Forum",why:"Women's forum. Cultural trust dynamics.",vol:"200-500",lang:"Arabic",url:"https://forum.hawaaworld.com/",rank:48,apify:"N/A"},
+{m:"Saudi Arabia",s:"Twitter/X",t:"Social",why:"Most active social KSA. Brand tagging.",vol:"3,000-10,000",lang:"Arabic",url:"https://twitter.com/search?q=%D8%B3%D9%8A%D9%85%D9%8A%D9%84%D8%A7%D9%83",rank:65,apify:"~$15/50K"},
+{m:"Saudi Arabia",s:"Amazon.sa",t:"E-commerce",why:"Growing review base.",vol:"200-500",lang:"Arabic/English",url:"https://www.amazon.sa/s?k=Similac",rank:44,apify:"N/A"},
+{m:"Saudi Arabia",s:"Instagram",t:"Social",why:"Mom influencers, emotional trust signals.",vol:"1,000-3,000",lang:"Arabic",url:"https://www.instagram.com/explore/tags/%D8%B3%D9%8A%D9%85%D9%8A%D9%84%D8%A7%D9%83/",rank:55,apify:"~$30/50K"},
+{m:"Saudi Arabia",s:"YouTube",t:"Social",why:"Arabic mom content, pediatrician advice.",vol:"2,000-5,000",lang:"Arabic",url:"https://www.youtube.com/results?search_query=%D8%B3%D9%8A%D9%85%D9%8A%D9%84%D8%A7%D9%83",rank:52,apify:"~$10/10K"},
+{m:"Saudi Arabia",s:"TikTok",t:"Social",why:"Growing parenting content KSA.",vol:"1,500-4,000",lang:"Arabic",url:"https://www.tiktok.com/search?q=%D8%B3%D9%8A%D9%85%D9%8A%D9%84%D8%A7%D9%83",rank:48,apify:"~$25/50K"},
+{m:"Saudi Arabia",s:"Noon.com",t:"E-commerce",why:"KSA e-commerce reviews.",vol:"100-300",lang:"Arabic/English",url:"https://www.noon.com/saudi-en/search/?q=Similac",rank:38,apify:"N/A"},
+];
+
+const dData=[
+{m:"UK",cat:"Condoms",p:"Amazon",vol:"70,000-90,000+",sc:true},{m:"UK",cat:"Condoms",p:"Boots",vol:"4,000-6,000+",sc:false},{m:"UK",cat:"Condoms",p:"Lovehoney",vol:"1,000-4,000",sc:false},{m:"UK",cat:"Condoms",p:"Reddit",vol:"1,000-2,000",sc:false},{m:"UK",cat:"Condoms",p:"MumsNet",vol:"1,000-2,000",sc:false},{m:"UK",cat:"Condoms",p:"YouTube UK",vol:"20,000-40,000",sc:false},{m:"UK",cat:"Condoms",p:"TikTok UK",vol:"10,000-20,000",sc:false},
+{m:"India",cat:"Condoms",p:"Amazon",vol:"50,000-70,000+",sc:true},{m:"India",cat:"Condoms",p:"Flipkart",vol:"20,000-30,000+",sc:false},{m:"India",cat:"Condoms",p:"Nykaa",vol:"2,000-3,000",sc:false},{m:"India",cat:"Condoms",p:"YouTube",vol:"2,400-12,000",sc:false},
+{m:"Vietnam",cat:"Condoms",p:"Shopee",vol:"50,000-80,000",sc:true},{m:"Vietnam",cat:"Condoms",p:"Lazada",vol:"4,000-5,000",sc:false},{m:"Vietnam",cat:"Condoms",p:"Tiki",vol:"5,000-6,000",sc:false},
+{m:"Brazil",cat:"Condoms",p:"Mercado Livre",vol:"5,000-10,000+",sc:true},{m:"Brazil",cat:"Condoms",p:"Amazon Brazil",vol:"10,000-20,000+",sc:true},{m:"Brazil",cat:"Condoms",p:"YouTube",vol:"1,200-3,000",sc:false},{m:"Brazil",cat:"Condoms",p:"TikTok",vol:"10,000-20,000",sc:false},
+{m:"USA",cat:"Lubes",p:"Amazon",vol:"500,000-600,000+",sc:true},{m:"USA",cat:"Lubes",p:"Walmart",vol:"40,000-60,000+",sc:false},{m:"USA",cat:"Lubes",p:"Target",vol:"40,000-50,000+",sc:false},
+{m:"Spain",cat:"Lubes",p:"Amazon",vol:"20,000-40,000",sc:true},{m:"Spain",cat:"Lubes",p:"AliExpress",vol:"10,000-20,000",sc:false},
+{m:"Vietnam",cat:"Lubes",p:"Shopee",vol:"50,000-70,000",sc:true},{m:"Vietnam",cat:"Lubes",p:"Lazada",vol:"9,000-15,000",sc:false},
+{m:"UK",cat:"Performance Booster",p:"Amazon",vol:"40,000-50,000",sc:true},{m:"UK",cat:"Performance Booster",p:"Boots",vol:"3,000-4,000",sc:false},
+{m:"India",cat:"Performance Booster",p:"Amazon",vol:"20,000-30,000",sc:true},{m:"India",cat:"Performance Booster",p:"Flipkart",vol:"10,000-20,000",sc:false},
+{m:"Brazil",cat:"Performance Booster",p:"Amazon Brazil",vol:"6,000-8,000",sc:true},
+{m:"India",cat:"Intimate Care",p:"Amazon",vol:"80,000-90,000",sc:true},{m:"India",cat:"Intimate Care",p:"Flipkart",vol:"40,000-70,000",sc:false},{m:"India",cat:"Intimate Care",p:"Nykaa",vol:"60,000-80,000",sc:false},
+{m:"Vietnam",cat:"Intimate Care",p:"Shopee",vol:"60,000-90,000",sc:true},{m:"Vietnam",cat:"Intimate Care",p:"Lazada",vol:"3,000-4,000",sc:false},
+{m:"Brazil",cat:"Intimate Care",p:"Amazon Brazil",vol:"20,000-30,000",sc:true},{m:"Brazil",cat:"Intimate Care",p:"Mercado Livre",vol:"5,000-6,000",sc:false},
+];
+
+const srcCats={scraped:{label:"Already Scraped",color:"#34d399",items:["Amazon India","Amazon MX","Shopee VN","Shopee PH","Lazada VN","Lazada PH","Flipkart","Mercado Libre","Amazon.sa (pattern)"]},reusable:{label:"Reusable (Apify/Adapt)",color:"#4f8cff",items:["YouTube (all)","TikTok (all)","Facebook (all)","Instagram (all)","Twitter/X (all)","Reddit (all)","Tiki","Amazon.sa"]},new:{label:"New Build",color:"#fb923c",items:["Webtretho","Lamchame.com","Smart Parenting PH","theAsianparent (PH/VN/IN)","FirstCry","Con Cung","BabyCenter (ES/IN)","BabyChakra","Momspresso","MomJunction","Quora India","Noon.com","FirstCry KSA","supermama.me","Hawaworld","Walmart MX","Watsons PH","1mg/PharmEasy","JD.com","Tmall/Taobao","Xiaohongshu","Zhihu"]}};
+
+// ── STATE ──
+const selectedPlatforms=new Map();
+let b1Sort={col:null,asc:true,ranked:false},b2Sort={col:null,asc:true,ranked:false},dCat='all',dMkt='all';
+
+// ── HELPERS ──
+function typeTag(t){return `<span class="tag ${t==='E-commerce'?'tag-ecom':t==='Social'?'tag-social':'tag-forum'}">${t}</span>`}
+function feasTag(f){return `<span class="tag ${f.includes('HIGH')?'tag-high':f.includes('LOW')?'tag-low':'tag-med'}">${f}</span>`}
+function rankBadge(r){const c=r>=85?'var(--green)':r>=60?'var(--yellow)':'var(--orange)';return `<span class="rank-badge" style="color:${c};background:${r>=85?'rgba(52,211,153,0.12)':r>=60?'rgba(251,191,36,0.12)':'rgba(251,146,60,0.12)'}">${r}</span>`}
+function durexTag(n){const s=isDurex(n);return s==='scraped'?'<span class="tag tag-scraped">✓Durex</span>':s==='reusable'?'<span class="tag tag-med">Adapt</span>':'<span class="tag" style="background:var(--red-bg);color:var(--red)">New</span>'}
+function toggleSort(b){if(b==='b1'){b1Sort.ranked=!b1Sort.ranked;b1Sort.col=null;document.getElementById('b1-sort-rank').classList.toggle('active',b1Sort.ranked);renderB1()}else{b2Sort.ranked=!b2Sort.ranked;b2Sort.col=null;document.getElementById('b2-sort-rank').classList.toggle('active',b2Sort.ranked);renderB2()}}
+function toggleSelect(brief,idx){const key=brief+'-'+idx;const data=brief==='b1'?b1Data:b2Data;const d=data[idx];if(selectedPlatforms.has(key))selectedPlatforms.delete(key);else selectedPlatforms.set(key,{brief:brief==='b1'?'Brief 1':'Brief 2',market:d.m,platform:d.p||d.s,type:d.t,apify:d.apify||'N/A',cost:0});if(brief==='b1')renderB1();else renderB2();renderCost()}
+
+// ── RENDER B1 ──
+function renderB1(){
+  const mf=document.querySelector('[data-filter="b1-market"].active')?.dataset.value||'all';
+  let rows=mf==='all'?[...b1Data]:b1Data.filter(d=>d.m===mf);
+  if(b1Sort.ranked)rows.sort((a,b)=>b.rank-a.rank);
+  else if(b1Sort.col)rows.sort((a,b)=>{let va=a[b1Sort.col]||'',vb=b[b1Sort.col]||'';return typeof va==='number'?(b1Sort.asc?va-vb:vb-va):(b1Sort.asc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va)))});
+  const cols=['sel','rank','m','cat','brands','p','t','vol','feas','apify','url','n','actual'];
+  const labels=['Scrape?','Rank','Market','Category','Brand(s)','Platform','Type','Claude Est.','Feasibility','Apify $','URL','Notes','Actual Vol.'];
+  document.querySelector('#b1-table thead tr').innerHTML=cols.map((c,i)=>`<th onclick="${c!=='sel'&&c!=='actual'&&c!=='url'&&c!=='brands'?`b1Sort.ranked=false;document.getElementById('b1-sort-rank').classList.remove('active');if(b1Sort.col==='${c}')b1Sort.asc=!b1Sort.asc;else{b1Sort.col='${c}';b1Sort.asc=true};renderB1()`:''}">${labels[i]}</th>`).join('');
+  document.querySelector('#b1-table tbody').innerHTML=rows.map(d=>{const oi=b1Data.indexOf(d);const key='b1-'+oi;const sel=selectedPlatforms.has(key);return `<tr class="${sel?'selected-row':''}"><td><button class="select-btn ${sel?'checked':''}" onclick="toggleSelect('b1',${oi})">${sel?'✓':''}</button></td><td>${rankBadge(d.rank)}</td><td>${d.m}</td><td>${d.cat}</td><td style="font-size:10px;color:var(--yellow);font-weight:500">${catBrands(d.cat)}</td><td><strong>${d.p}</strong> ${durexTag(d.p)}</td><td>${typeTag(d.t)}</td><td>${d.vol}</td><td>${feasTag(d.feas)}</td><td style="font-size:10px;color:var(--text2)">${d.apify}</td><td><a class="url-link" href="${d.url}" target="_blank">Open→</a></td><td style="color:var(--text2);font-size:10px;max-width:180px">${d.n}</td><td><input class="actual-input" placeholder="—"/></td></tr>`}).join('')}
+
+// ── RENDER B2 ──
+function renderB2(){
+  const mf=document.querySelector('[data-filter="b2-market"].active')?.dataset.value||'all';
+  let rows=mf==='all'?[...b2Data]:b2Data.filter(d=>d.m===mf);
+  if(b2Sort.ranked)rows.sort((a,b)=>b.rank-a.rank);
+  else if(b2Sort.col)rows.sort((a,b)=>{let va=a[b2Sort.col]||'',vb=b[b2Sort.col]||'';return typeof va==='number'?(b2Sort.asc?va-vb:vb-va):(b2Sort.asc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va)))});
+  const cols=['sel','rank','m','brand','s','t','why','vol','lang','apify','url','actual'];
+  const labels=['Scrape?','Rank','Market','Brand','Source','Type','Why Best','Claude Est.','Lang','Apify $','URL','Actual Vol.'];
+  document.querySelector('#b2-table thead tr').innerHTML=cols.map((c,i)=>`<th onclick="${c!=='sel'&&c!=='actual'&&c!=='url'&&c!=='brand'?`b2Sort.ranked=false;document.getElementById('b2-sort-rank').classList.remove('active');if(b2Sort.col==='${c}')b2Sort.asc=!b2Sort.asc;else{b2Sort.col='${c}';b2Sort.asc=true};renderB2()`:''}">${labels[i]}</th>`).join('');
+  document.querySelector('#b2-table tbody').innerHTML=rows.map(d=>{const oi=b2Data.indexOf(d);const key='b2-'+oi;const sel=selectedPlatforms.has(key);return `<tr class="${sel?'selected-row':''}"><td><button class="select-btn ${sel?'checked':''}" onclick="toggleSelect('b2',${oi})">${sel?'✓':''}</button></td><td>${rankBadge(d.rank)}</td><td>${d.m}</td><td style="font-size:10px;color:var(--yellow);font-weight:500">Similac</td><td><strong>${d.s}</strong> ${durexTag(d.s)}</td><td>${typeTag(d.t)}</td><td style="font-size:10px;color:var(--text2);max-width:250px">${d.why}</td><td>${d.vol}</td><td style="text-align:center;font-size:11px">${d.lang}</td><td style="font-size:10px;color:var(--text2)">${d.apify}</td><td><a class="url-link" href="${d.url}" target="_blank">Open→</a></td><td><input class="actual-input" placeholder="—"/></td></tr>`}).join('')}
+
+// ── RENDER DUREX ──
+function renderDurex(){document.querySelector('#d-table tbody').innerHTML=dData.filter(d=>(dCat==='all'||d.cat===dCat)&&(dMkt==='all'||d.m===dMkt)).map(d=>`<tr style="${d.sc?'background:rgba(52,211,153,0.04)':''}"><td>${d.m}</td><td>${d.cat}</td><td><strong>${d.p}</strong></td><td>${d.vol}</td><td>${d.sc?'<span class="tag tag-scraped">✓ SCRAPED</span>':'<span class="tag tag-med">Estimated</span>'}</td></tr>`).join('')}
+
+// ── RENDER COST ──
+function renderCost(){
+  const e=document.getElementById('cost-empty'),c=document.getElementById('cost-content');
+  if(!selectedPlatforms.size){e.style.display='block';c.style.display='none';return}
+  e.style.display='none';c.style.display='block';
+  let dc=0,nc=0,tc=0;
+  const marketCosts={},typeCosts={},statusCosts={scraped:0,reusable:0,new:0};
+  document.querySelector('#cost-table tbody').innerHTML=[...selectedPlatforms].map(([key,v])=>{
+    const st=isDurex(v.platform);if(st==='scraped')dc++;else nc++;tc+=v.cost||0;
+    marketCosts[v.market]=(marketCosts[v.market]||0)+(v.cost||0);
+    typeCosts[v.type]=(typeCosts[v.type]||0)+(v.cost||0);
+    statusCosts[st]=(statusCosts[st]||0)+(v.cost||0);
+    return `<tr><td>${v.brief}</td><td>${v.market}</td><td><strong>${v.platform}</strong></td><td>${typeTag(v.type)}</td><td>${st==='scraped'?'<span class="tag tag-scraped">✓ Durex</span>':st==='reusable'?'<span class="tag tag-med">Adapt</span>':'<span class="tag" style="background:var(--red-bg);color:var(--red)">New</span>'}</td><td style="font-size:11px;color:var(--text2)">${v.apify}</td><td><input class="cost-input" type="number" value="${v.cost||''}" placeholder="0" onchange="selectedPlatforms.get('${key}').cost=parseFloat(this.value)||0;renderCost()"/></td><td><button class="select-btn checked" onclick="selectedPlatforms.delete('${key}');renderB1();renderB2();renderCost()" style="background:var(--red);border-color:var(--red)">✕</button></td></tr>`
+  }).join('');
+  document.getElementById('cost-count').textContent=selectedPlatforms.size;
+  document.getElementById('cost-overlap').textContent=dc;
+  document.getElementById('cost-new').textContent=nc;
+  document.getElementById('cost-total').textContent='$'+tc.toLocaleString();
+  // Draw cost charts
+  drawCostBars('cost-market-bars',marketCosts,'var(--accent)');
+  const typeColors={'E-commerce':'var(--accent)','Social':'var(--orange)','Forum':'var(--accent2)'};
+  drawCostBarsColored('cost-type-bars',typeCosts,typeColors);
+  drawCostBarsColored('cost-status-bars',{
+    'Durex Spider':statusCosts.scraped,
+    'Adaptable':statusCosts.reusable,
+    'New Build':statusCosts.new
+  },{'Durex Spider':'var(--green)','Adaptable':'var(--accent)','New Build':'var(--orange)'});
+}
+function drawCostBars(containerId,data,color){
+  const container=document.getElementById(containerId);if(!container)return;
+  const entries=Object.entries(data).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length){container.innerHTML='<div style="color:var(--text2);font-size:12px;text-align:center;padding:20px">💡 Enter costs in the table above — charts update live</div>';return}
+  const max=Math.max(...entries.map(([,v])=>v));
+  container.innerHTML=entries.map(([k,v])=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:90px;font-size:11px;text-align:right;color:var(--text2);flex-shrink:0">${k}</div><div style="flex:1;height:22px;border-radius:5px;overflow:hidden;background:var(--bg)"><div style="width:${Math.max(v/max*100,8)}%;height:100%;background:${color};border-radius:5px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:10px;font-weight:700;color:#fff;font-family:'Space Mono',monospace">$${v.toLocaleString()}</div></div></div>`).join('');
+}
+function drawCostBarsColored(containerId,data,colors){
+  const container=document.getElementById(containerId);if(!container)return;
+  const entries=Object.entries(data).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length){container.innerHTML='<div style="color:var(--text2);font-size:12px;text-align:center;padding:20px">💡 Enter costs in the table above — charts update live</div>';return}
+  const max=Math.max(...entries.map(([,v])=>v));
+  container.innerHTML=entries.map(([k,v])=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:90px;font-size:11px;text-align:right;color:var(--text2);flex-shrink:0">${k}</div><div style="flex:1;height:22px;border-radius:5px;overflow:hidden;background:var(--bg)"><div style="width:${Math.max(v/max*100,8)}%;height:100%;background:${colors[k]||'var(--accent)'};border-radius:5px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;font-size:10px;font-weight:700;color:#fff;font-family:'Space Mono',monospace">$${v.toLocaleString()}</div></div></div>`).join('');
+}
+
+// ── DONUT ──
+function drawDonut(){
+  const svg=document.getElementById('donut-chart');const counts={scraped:srcCats.scraped.items.length,reusable:srcCats.reusable.items.length,new:srcCats.new.items.length};
+  const total=counts.scraped+counts.reusable+counts.new;const cx=200,cy=130,r=90,r2=52;
+  let html='',sa=-Math.PI/2;
+  [{k:'scraped',c:counts.scraped,cl:'#34d399'},{k:'reusable',c:counts.reusable,cl:'#4f8cff'},{k:'new',c:counts.new,cl:'#fb923c'}].forEach(s=>{
+    const a=(s.c/total)*2*Math.PI,ea=sa+a,ma=sa+a/2,lg=a>Math.PI?1:0;
+    html+=`<path d="M${cx+r*Math.cos(sa)},${cy+r*Math.sin(sa)} A${r},${r} 0 ${lg},1 ${cx+r*Math.cos(ea)},${cy+r*Math.sin(ea)} L${cx+r2*Math.cos(ea)},${cy+r2*Math.sin(ea)} A${r2},${r2} 0 ${lg},0 ${cx+r2*Math.cos(sa)},${cy+r2*Math.sin(sa)} Z" fill="${s.cl}" opacity="0.85" style="cursor:pointer" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.85'" onclick="showCat('${s.k}')"/>`;
+    const lr=(r+r2)/2+4;html+=`<text x="${cx+lr*Math.cos(ma)}" y="${cy+lr*Math.sin(ma)}" text-anchor="middle" dominant-baseline="middle" fill="#fff" font-family="Space Mono,monospace" font-size="12" font-weight="700">${s.c}</text>`;
+    sa=ea;
+  });
+  html+=`<text x="${cx}" y="${cy-6}" text-anchor="middle" fill="#e4e6ef" font-size="28" font-weight="700">${total}</text><text x="${cx}" y="${cy+12}" text-anchor="middle" fill="#8b90a5" font-family="Space Mono,monospace" font-size="9">SOURCES</text>`;
+  [{t:`${counts.scraped} Scraped`,c:'#34d399',x:80},{t:`${counts.reusable} Reusable`,c:'#4f8cff',x:200},{t:`${counts.new} New`,c:'#fb923c',x:320}].forEach(l=>{html+=`<text x="${l.x}" y="260" text-anchor="middle" fill="${l.c}" font-family="Space Mono,monospace" font-size="11" font-weight="700">${l.t}</text><text x="${l.x}" y="276" text-anchor="middle" fill="#8b90a5" font-size="10">${Math.round(parseInt(l.t)/total*100)}%</text>`});
+  svg.innerHTML=html;
+}
+function showCat(key){const cat=srcCats[key];document.getElementById('source-detail').innerHTML=`<div style="font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:${cat.color};margin-bottom:12px">${cat.label} (${cat.items.length})</div>`+cat.items.map(n=>`<div style="padding:7px 10px;margin-bottom:5px;background:var(--surface2);border-radius:6px;border-left:3px solid ${cat.color};font-size:12px">${n}</div>`).join('')}
+function drawBars(){
+  const markets={};Object.entries(srcCats).forEach(([key,cat])=>{cat.items.forEach(n=>{const isAll=n.includes('(all)');const mkts=isAll?['Mexico','CADR','Philippines','Vietnam','India','Saudi Arabia','China']:n.includes('(PH/VN/IN)')?['Philippines','Vietnam','India']:n.includes('(ES/IN)')?['Mexico','CADR','India']:[n.split(' ').pop()];/* simplified - just count totals */})});
+  // Simplified bar chart using hard-coded counts per market for accuracy
+  const mktData=[{m:'Mexico',s:2,r:6,n:3},{m:'CADR',s:1,r:3,n:1},{m:'Philippines',s:2,r:5,n:3},{m:'Vietnam',s:2,r:4,n:4},{m:'India',s:2,r:6,n:7},{m:'Saudi Arabia',s:1,r:5,n:4},{m:'China',s:0,r:0,n:7}];
+  const maxT=Math.max(...mktData.map(d=>d.s+d.r+d.n));
+  document.getElementById('market-bars').innerHTML=mktData.map(d=>{const t=d.s+d.r+d.n;return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div style="width:100px;font-size:11px;text-align:right;color:var(--text2)">${d.m}</div><div style="flex:1;display:flex;height:24px;border-radius:5px;overflow:hidden;background:var(--bg);gap:1px">${d.s?`<div style="width:${d.s/maxT*100}%;background:#34d399;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#0c0e14">${d.s}</div>`:''}${d.r?`<div style="width:${d.r/maxT*100}%;background:#4f8cff;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff">${d.r}</div>`:''}${d.n?`<div style="width:${d.n/maxT*100}%;background:#fb923c;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#0c0e14">${d.n}</div>`:''}</div><div style="width:30px;font-family:'Space Mono',monospace;font-size:11px;font-weight:700">${t}</div></div>`}).join('');
+}
+
+// ── NAV + FILTERS ──
+document.querySelectorAll('.nav-tab').forEach(tab=>{tab.addEventListener('click',()=>{document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));tab.classList.add('active');document.getElementById(tab.dataset.panel).classList.add('active')})});
+document.querySelectorAll('.filter-btn').forEach(btn=>{if(btn.id?.includes('sort'))return;btn.addEventListener('click',()=>{const g=btn.dataset.filter;document.querySelectorAll(`[data-filter="${g}"]`).forEach(b=>b.classList.remove('active'));btn.classList.add('active');const v=btn.dataset.value;if(g==='b1-market')renderB1();else if(g==='b2-market')renderB2();else if(g==='d-cat'){dCat=v;renderDurex()}else if(g==='d-mkt'){dMkt=v;renderDurex()}})});
+
+// ── INIT ──
+document.getElementById('total-sources').textContent=b1Data.length+b2Data.length;
+drawDonut();showCat('scraped');drawBars();renderB1();renderB2();renderDurex();renderCost();
+</script>
+</body>
+</html>
