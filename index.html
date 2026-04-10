@@ -194,33 +194,43 @@ a.url-link:hover{opacity:1;text-decoration:underline}
 </div>
 
 <div class="panel" id="cost">
-  <div class="section-header"><h2>💰 Cost Estimator</h2><p>Platforms you selected (✓) from Brief 1 &amp; 2 appear here. Add costs per platform. Durex spider overlap detected automatically.</p></div>
-  <div style="margin-bottom:16px"><button class="filter-btn" onclick="exportCSV('cost')">📥 Export Cost Estimate CSV</button></div>
+  <div class="section-header"><h2>💰 Cost Estimator</h2><p>Platforms you selected (✓) from Brief 1 &amp; 2 appear here. Filters, sorting, and live cost calculations.</p></div>
   <div id="cost-empty" style="text-align:center;padding:60px;color:var(--text2);font-size:14px;">No platforms selected yet. Go to <strong>Brief 1</strong> or <strong>Brief 2</strong> and click the ✓ button on platforms to scrape.</div>
   <div id="cost-content" style="display:none;">
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;">
       <div class="card"><div class="card-label">Selected</div><div class="card-value green" id="cost-count">0</div></div>
-      <div class="card"><div class="card-label">Durex Overlap</div><div class="card-value" id="cost-overlap">0</div></div>
-      <div class="card"><div class="card-label">New Builds</div><div class="card-value orange" id="cost-new">0</div></div>
+      <div class="card"><div class="card-label">Apify Sources</div><div class="card-value" id="cost-overlap">0</div></div>
+      <div class="card"><div class="card-label">Custom Spiders</div><div class="card-value orange" id="cost-new">0</div></div>
       <div class="card"><div class="card-label">Total Est. Cost</div><div class="cost-total" id="cost-total">$0</div></div>
     </div>
-    <div class="table-wrap"><table id="cost-table"><thead><tr><th>Brief</th><th>Market</th><th>Platform</th><th>Type</th><th>Method</th><th>Durex Spider?</th><th>Apify Rate</th><th>Target Volume</th><th>Est. Cost ($)</th><th>Remove</th></tr></thead><tbody></tbody></table></div>
+    <div class="filters">
+      <span class="filter-label">Brief:</span>
+      <button class="filter-btn active" data-filter="cost-brief" data-value="all">All</button>
+      <button class="filter-btn" data-filter="cost-brief" data-value="Brief 1">Brief 1</button>
+      <button class="filter-btn" data-filter="cost-brief" data-value="Brief 2">Brief 2</button>
+      <span class="filter-label" style="margin-left:16px;">Market:</span>
+      <button class="filter-btn active" data-filter="cost-market" data-value="all">All</button>
+      <button class="filter-btn" data-filter="cost-market" data-value="Mexico">MX</button>
+      <button class="filter-btn" data-filter="cost-market" data-value="CADR">CADR</button>
+      <button class="filter-btn" data-filter="cost-market" data-value="Philippines">PH</button>
+      <button class="filter-btn" data-filter="cost-market" data-value="Vietnam">VN</button>
+      <button class="filter-btn" data-filter="cost-market" data-value="India">India</button>
+      <button class="filter-btn" data-filter="cost-market" data-value="Saudi Arabia">KSA</button>
+      <button class="filter-btn" data-filter="cost-market" data-value="China">China</button>
+      <span style="margin-left:auto"></span>
+      <button class="filter-btn" onclick="exportCSV('cost')">📥 Export CSV</button>
+    </div>
+    <div class="table-wrap"><table id="cost-table"><thead><tr></tr></thead><tbody></tbody></table></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px;">
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:24px;">
         <div style="font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text2);margin-bottom:14px;">Cost by Market</div>
-        <div id="cost-market-bars"></div>
-        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
-          <div style="font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text2);margin-bottom:10px;">Cost by Scrape Method</div>
-          <div id="cost-method-bars"></div>
-        </div>
-      </div>
         <div id="cost-market-bars"></div>
       </div>
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:24px;">
         <div style="font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text2);margin-bottom:14px;">Cost by Source Type</div>
         <div id="cost-type-bars"></div>
         <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
-          <div style="font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text2);margin-bottom:10px;">Build Status Breakdown</div>
+          <div style="font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text2);margin-bottom:10px;">Cost by Method (Apify vs Custom)</div>
           <div id="cost-status-bars"></div>
         </div>
       </div>
@@ -412,28 +422,6 @@ function typeTag(t){return `<span class="tag ${t==='E-commerce'?'tag-ecom':t==='
 function feasTag(f){return `<span class="tag ${f.includes('HIGH')?'tag-high':f.includes('LOW')?'tag-low':'tag-med'}">${f}</span>`}
 function rankBadge(r){const c=r>=85?'var(--green)':r>=60?'var(--yellow)':'var(--orange)';return `<span class="rank-badge" style="color:${c};background:${r>=85?'rgba(52,211,153,0.12)':r>=60?'rgba(251,191,36,0.12)':'rgba(251,146,60,0.12)'}">${r}</span>`}
 function durexTag(n){const s=isDurex(n);return s==='scraped'?'<span class="tag tag-scraped">✓Durex</span>':s==='reusable'?'<span class="tag tag-med">Adapt</span>':'<span class="tag" style="background:var(--red-bg);color:var(--red)">New</span>'}
-function scrapeMethod(platform){
-  const p=platform.toLowerCase();
-  // Apify actors
-  if(p.includes('facebook')||p.includes('youtube')||p.includes('tiktok')||p.includes('instagram')||p.includes('reels')||p.includes('twitter')||p.includes('reddit')||p.includes('weibo')) return 'Apify';
-  if(p.includes('shopee')||p.includes('lazada')||p.includes('flipkart')||p.includes('mercado')||p.includes('firstcry')||p.includes('tiki')||p.includes('noon')||p.includes('walmart')||p.includes('amazon')) return 'Apify';
-  // China Apify
-  if(p.includes('xiaohongshu')||p.includes('red')||p.includes('tmall')||p.includes('taobao')||p.includes('douyin')) return 'Apify';
-  // Free tools / custom
-  if(p.includes('jd.com')) return 'Free Tool';
-  if(p.includes('zhihu')) return 'Free Tool';
-  if(p.includes('con cung')||p.includes('1mg')) return 'Custom Spider';
-  // Forums = custom
-  if(p.includes('webtretho')||p.includes('lamchame')||p.includes('smart parenting')||p.includes('asianparent')||p.includes('babycenter')||p.includes('babychakra')||p.includes('momspresso')||p.includes('momjunction')||p.includes('quora')||p.includes('supermama')||p.includes('hawaworld')) return 'Custom Spider';
-  return 'TBD';
-}
-function methodTag(platform){
-  const m=scrapeMethod(platform);
-  if(m==='Apify') return '<span class="tag" style="background:rgba(79,140,255,0.12);color:var(--accent);border:1px solid rgba(79,140,255,0.3)">Apify</span>';
-  if(m==='Custom Spider') return '<span class="tag" style="background:rgba(251,146,60,0.12);color:var(--orange);border:1px solid rgba(251,146,60,0.3)">Custom</span>';
-  if(m==='Free Tool') return '<span class="tag" style="background:rgba(52,211,153,0.12);color:var(--green);border:1px solid rgba(52,211,153,0.3)">Free Tool</span>';
-  return '<span class="tag" style="background:var(--surface2);color:var(--text2)">TBD</span>';
-}
 function toggleSort(b){if(b==='b1'){b1Sort.ranked=!b1Sort.ranked;b1Sort.col=null;document.getElementById('b1-sort-rank').classList.toggle('active',b1Sort.ranked);renderB1()}else{b2Sort.ranked=!b2Sort.ranked;b2Sort.col=null;document.getElementById('b2-sort-rank').classList.toggle('active',b2Sort.ranked);renderB2()}}
 function toggleSelect(brief,idx){const key=brief+'-'+idx;const data=brief==='b1'?b1Data:b2Data;const d=data[idx];if(selectedPlatforms.has(key))selectedPlatforms.delete(key);else selectedPlatforms.set(key,{brief:brief==='b1'?'Brief 1':'Brief 2',market:d.m,platform:d.p||d.s,type:d.t,apify:d.apify||'N/A',cost:0});if(brief==='b1')renderB1();else renderB2();renderCost()}
 
@@ -463,38 +451,80 @@ function renderB2(){
 function renderDurex(){document.querySelector('#d-table tbody').innerHTML=dData.filter(d=>(dCat==='all'||d.cat===dCat)&&(dMkt==='all'||d.m===dMkt)).map(d=>`<tr style="${d.sc?'background:rgba(52,211,153,0.04)':''}"><td>${d.m}</td><td>${d.cat}</td><td><strong>${d.p}</strong></td><td>${d.vol}</td><td>${d.sc?'<span class="tag tag-scraped">✓ SCRAPED</span>':'<span class="tag tag-med">Estimated</span>'}</td></tr>`).join('')}
 
 // ── RENDER COST ──
+let costSort={col:null,asc:true};
+let costEditRow=null;
+function sortCostCol(col){if(costSort.col===col)costSort.asc=!costSort.asc;else{costSort.col=col;costSort.asc=true}renderCost()}
 function renderCost(){
   const e=document.getElementById('cost-empty'),c=document.getElementById('cost-content');
   if(!selectedPlatforms.size){e.style.display='block';c.style.display='none';return}
   e.style.display='none';c.style.display='block';
-  let dc=0,nc=0,tc=0;
-  const marketCosts={},typeCosts={},statusCosts={scraped:0,reusable:0,new:0},methodCosts={Apify:0,'Custom Spider':0,'Free Tool':0};
-  document.querySelector('#cost-table tbody').innerHTML=[...selectedPlatforms].map(([key,v])=>{
-    const st=isDurex(v.platform);if(st==='scraped')dc++;else nc++;tc+=v.cost||0;
-    const method=scrapeMethod(v.platform);
+  // Get filter values
+  const briefF=document.querySelector('[data-filter="cost-brief"].active')?.dataset.value||'all';
+  const mktF=document.querySelector('[data-filter="cost-market"].active')?.dataset.value||'all';
+  // Filter entries
+  let entries=[...selectedPlatforms].filter(([k,v])=>{
+    if(briefF!=='all'&&v.brief!==briefF)return false;
+    if(mktF!=='all'&&v.market!==mktF)return false;
+    return true;
+  });
+  // Sort
+  if(costSort.col){
+    entries.sort(([,a],[,b])=>{
+      let va,vb;
+      switch(costSort.col){
+        case'brief':va=a.brief;vb=b.brief;break;
+        case'market':va=a.market;vb=b.market;break;
+        case'platform':va=a.platform;vb=b.platform;break;
+        case'type':va=a.type;vb=b.type;break;
+        case'method':va=scrapeMethod(a.platform).method;vb=scrapeMethod(b.platform).method;break;
+        case'rate':va=a.rateLabel||'';vb=b.rateLabel||'';break;
+        case'volume':va=a.volume||0;vb=b.volume||0;return costSort.asc?va-vb:vb-va;
+        case'cost':va=a.cost||0;vb=b.cost||0;return costSort.asc?va-vb:vb-va;
+        default:va='';vb='';
+      }
+      return costSort.asc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va));
+    });
+  }
+  let apifyCount=0,customCount=0,tc=0,filteredCost=0;
+  const marketCosts={},typeCosts={},methodCosts={'Apify':0,'Custom Spider':0};
+  // Count ALL selected (unfiltered) for summary cards
+  selectedPlatforms.forEach(v=>{
+    const sm=scrapeMethod(v.platform);
+    if(sm.method==='Apify')apifyCount++;else customCount++;
+    tc+=v.cost||0;
+  });
+  // Build table from filtered entries
+  const costCols=['brief','market','platform','type','method','rate','volume','cost','actions'];
+  const costLabels=['Brief','Market','Platform','Type','Method','Apify Rate','Target Vol.','Est. Cost ($)','Actions'];
+  document.querySelector('#cost-table thead tr').innerHTML=costCols.map((col,i)=>{
+    const sortable=col!=='actions';
+    const arrow=costSort.col===col?(costSort.asc?' ▲':' ▼'):(sortable?' ⇅':'');
+    return `<th style="${sortable?'cursor:pointer':''}" onclick="${sortable?`sortCostCol('${col}')`:''}">${costLabels[i]}<span style="font-size:8px;opacity:${costSort.col===col?'1':'0.3'};margin-left:3px;color:${costSort.col===col?'var(--accent)':'inherit'}">${arrow}</span></th>`;
+  }).join('');
+  document.querySelector('#cost-table tbody').innerHTML=entries.map(([key,v])=>{
+    const sm=scrapeMethod(v.platform);
+    filteredCost+=v.cost||0;
     marketCosts[v.market]=(marketCosts[v.market]||0)+(v.cost||0);
     typeCosts[v.type]=(typeCosts[v.type]||0)+(v.cost||0);
-    statusCosts[st]=(statusCosts[st]||0)+(v.cost||0);
-    methodCosts[method]=(methodCosts[method]||0)+(v.cost||0);
+    methodCosts[sm.method==='Apify'?'Apify':'Custom Spider']+=(v.cost||0);
+    const editing=costEditRow===key;
     return `<tr>
       <td>${v.brief}</td><td>${v.market}</td><td><strong>${v.platform}</strong></td><td>${typeTag(v.type)}</td>
-      <td>${methodTag(v.platform)}</td>
-      <td>${st==='scraped'?'<span class="tag tag-scraped">✓ Durex</span>':st==='reusable'?'<span class="tag tag-med">Adapt</span>':'<span class="tag" style="background:var(--red-bg);color:var(--red)">New</span>'}</td>
+      <td>${sm.tag}</td>
       <td style="font-size:10px;color:var(--text2)">${v.rateLabel||v.apify||'—'}</td>
-      <td><input class="actual-input" type="number" value="${v.volume||''}" placeholder="0" style="width:100px" onchange="updateVolume('${key}',this.value)"/></td>
-      <td><input class="cost-input" type="number" value="${v.cost||''}" placeholder="0" onchange="updateCostDirect('${key}',this.value)"/></td>
-      <td><button class="select-btn checked" onclick="selectedPlatforms.delete('${key}');renderB1();renderB2();renderCost()" style="background:var(--red);border-color:var(--red)">✕</button></td>
-    </tr>`
+      <td style="font-family:'Space Mono',monospace;font-size:11px">${editing?`<input class="actual-input" type="number" value="${v.volume||''}" placeholder="0" style="width:90px" onchange="updateVolume('${key}',this.value)"/>`:`<span style="color:var(--text)">${(v.volume||0).toLocaleString()}</span>`}</td>
+      <td style="font-family:'Space Mono',monospace;font-size:11px;font-weight:700;color:${v.cost>0?'var(--green)':'var(--text2)'}">${editing?`<input class="cost-input" type="number" value="${v.cost||''}" placeholder="0" onchange="updateCostDirect('${key}',this.value)"/>`:`$${(v.cost||0).toLocaleString()}`}</td>
+      <td style="white-space:nowrap">${editing?`<button class="filter-btn" style="padding:3px 10px;font-size:10px" onclick="costEditRow=null;renderCost()">Done</button>`:`<button class="filter-btn" style="padding:3px 10px;font-size:10px" onclick="costEditRow='${key}';renderCost()">✏️</button>`} <button class="select-btn checked" style="background:var(--red);border-color:var(--red);width:18px;height:18px;font-size:10px;display:inline-flex" onclick="selectedPlatforms.delete('${key}');renderB1();renderB2();renderCost()">✕</button></td>
+    </tr>`;
   }).join('');
   document.getElementById('cost-count').textContent=selectedPlatforms.size;
-  document.getElementById('cost-overlap').textContent=dc;
-  document.getElementById('cost-new').textContent=nc;
-  document.getElementById('cost-total').textContent='$'+tc.toLocaleString();
+  document.getElementById('cost-overlap').textContent=apifyCount;
+  document.getElementById('cost-new').textContent=customCount;
+  document.getElementById('cost-total').textContent='$'+tc.toLocaleString()+(briefF!=='all'||mktF!=='all'?' (filtered: $'+filteredCost.toLocaleString()+')':'');
   drawCostBars('cost-market-bars',marketCosts,'var(--accent)');
-  drawCostBarsColored('cost-method-bars',methodCosts,{'Apify':'var(--accent)','Custom Spider':'var(--orange)','Free Tool':'var(--green)'});
   const typeColors={'E-commerce':'var(--accent)','Social':'var(--orange)','Forum':'var(--accent2)'};
   drawCostBarsColored('cost-type-bars',typeCosts,typeColors);
-  drawCostBarsColored('cost-status-bars',{'Durex Spider':statusCosts.scraped,'Adaptable':statusCosts.reusable,'New Build':statusCosts.new},{'Durex Spider':'var(--green)','Adaptable':'var(--accent)','New Build':'var(--orange)'});
+  drawCostBarsColored('cost-status-bars',{'Apify':methodCosts['Apify'],'Custom Spider':methodCosts['Custom Spider']},{'Apify':'var(--orange)','Custom Spider':'var(--accent2)'});
 }
 function updateVolume(key,val){
   const p=selectedPlatforms.get(key);if(!p)return;
@@ -549,7 +579,7 @@ function drawBars(){
 
 // ── NAV + FILTERS ──
 document.querySelectorAll('.nav-tab').forEach(tab=>{tab.addEventListener('click',()=>{document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));tab.classList.add('active');document.getElementById(tab.dataset.panel).classList.add('active')})});
-document.querySelectorAll('.filter-btn').forEach(btn=>{if(btn.id?.includes('sort'))return;btn.addEventListener('click',()=>{const g=btn.dataset.filter;document.querySelectorAll(`[data-filter="${g}"]`).forEach(b=>b.classList.remove('active'));btn.classList.add('active');const v=btn.dataset.value;if(g==='b1-market')renderB1();else if(g==='b2-market')renderB2();else if(g==='d-cat'){dCat=v;renderDurex()}else if(g==='d-mkt'){dMkt=v;renderDurex()}})});
+document.querySelectorAll('.filter-btn').forEach(btn=>{if(btn.id?.includes('sort'))return;btn.addEventListener('click',()=>{const g=btn.dataset.filter;if(!g)return;document.querySelectorAll(`[data-filter="${g}"]`).forEach(b=>b.classList.remove('active'));btn.classList.add('active');const v=btn.dataset.value;if(g==='b1-market')renderB1();else if(g==='b2-market')renderB2();else if(g==='d-cat'){dCat=v;renderDurex()}else if(g==='d-mkt'){dMkt=v;renderDurex()}else if(g==='cost-brief'||g==='cost-market')renderCost()})});
 
 // ── INIT ──
 // Pre-select Kelsey's picks
