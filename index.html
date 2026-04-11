@@ -604,12 +604,12 @@ function getCostDetails(platform, type, vol) {
   
   // ── SOCIAL: Apify PPR pricing (verified April 2026) ──
   if (p.includes('facebook')) return {rate:5, rateLabel:'$5/1K posts (Apify PPR)', volume:midVol, cost:Math.round(midVol/1000*5), isFixed:false};
-  if (p.includes('youtube')) return {rate:5, rateLabel:'$5/1K videos (Apify PPR)', volume:midVol, cost:Math.round(midVol/1000*5), isFixed:false};
+  if (p.includes('youtube')) return {rate:2, rateLabel:'$2/1K comments (Apify PPR)', volume:midVol, cost:Math.round(midVol/1000*2), isFixed:false};
   if (p.includes('tiktok') || p.includes('douyin')) return {rate:0.30, rateLabel:'$0.30/1K posts (Apify)', volume:midVol, cost:Math.round(midVol/1000*0.30), isFixed:false};
   if (p.includes('instagram') || p.includes('reels')) return {rate:0.50, rateLabel:'$0.50/1K posts (Apify)', volume:midVol, cost:Math.round(midVol/1000*0.50), isFixed:false};
   if (p.includes('twitter') || p === 'twitter/x') return {rate:0.40, rateLabel:'$0.40/1K tweets (Apify)', volume:midVol, cost:Math.round(midVol/1000*0.40), isFixed:false};
   if (p.includes('reddit')) return {rate:1.0, rateLabel:'$1/1K posts (Apify)', volume:midVol, cost:Math.round(midVol/1000*1.0), isFixed:false};
-  if (p.includes('weibo')) return {rate:3, rateLabel:'$3/1K posts (est.)', volume:midVol, cost:Math.round(midVol/1000*3), isFixed:false};
+  if (p.includes('weibo')) return {rate:5, rateLabel:'$5/1K items (Apify PPR)', volume:midVol, cost:Math.round(midVol/1000*5), isFixed:false};
   
   // ── E-COMMERCE: Exact Apify actor pricing (from Asad's Apify account) ──
   // Shopee All-In-One: $29.99/mo + usage
