@@ -177,27 +177,62 @@ textarea.edit-input{resize:vertical;min-height:46px;font-family:'DM Sans',sans-s
 
 /* Inline country — blue chip styling */
 .inline-select.country{color:#a0c0ff;border-color:rgba(91,154,255,0.3);background:rgba(91,154,255,0.08)}
-.inline-select.country.missing{color:var(--red);border-color:var(--red);background:var(--red-bg);border-style:dashed}
+.inline-select.country.missing,
+.inline-select.type.missing{color:var(--red);border-color:var(--red);background:var(--red-bg);border-style:dashed}
+
+/* Inline type — colored per type */
+.inline-select.type.typeecommerce{color:#7be8a3;border-color:rgba(74,222,128,0.3);background:rgba(74,222,128,0.08)}
+.inline-select.type.typeforum    {color:#fcd053;border-color:rgba(251,191,36,0.3);background:rgba(251,191,36,0.08)}
+.inline-select.type.typesocial   {color:#b8b3ff;border-color:rgba(122,114,255,0.35);background:rgba(122,114,255,0.08)}
+.inline-select.type.typeother    {color:var(--text2);background:var(--gray-bg)}
 
 /* Inline region — subtle */
 .inline-select.region{color:var(--text2);font-family:'Space Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:1px;font-weight:700}
 
-/* Inline text inputs (URL + S3) */
+/* Inline text inputs (URL + S3 + Source + Notes) */
 .inline-input{
-  width:calc(100% - 22px);font-family:'Space Mono',monospace;font-size:12px;
-  padding:7px 9px;border-radius:6px;border:1px solid var(--border);
-  background:var(--surface);color:var(--accent);outline:none;
+  width:100%;font-family:'Space Mono',monospace;font-size:12px;
+  padding:7px 9px;border-radius:6px;border:1px solid transparent;
+  background:transparent;color:var(--text);outline:none;
   transition:all 0.15s;
 }
-.inline-input:hover{border-color:var(--text2)}
+.inline-input:hover{border-color:var(--border);background:var(--surface)}
 .inline-input:focus{border-color:var(--accent);background:var(--surface2);color:var(--text)}
 .inline-input::placeholder{color:var(--text3);font-style:italic}
-.inline-input.s3{color:#7be8a3}
+
+/* Source input — looks like the title of the row */
+.inline-input.source{
+  font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;
+  color:var(--text);padding:5px 9px;
+}
+.inline-input.subsource{
+  font-family:'Space Mono',monospace;font-size:12px;color:var(--text2);
+  margin-top:3px;padding:5px 9px;
+}
+
+/* URL + S3 — colored to signal their purpose */
+.inline-input.url{color:var(--accent);font-size:12px;width:calc(100% - 22px)}
+.inline-input.url:focus{color:var(--text)}
+.inline-input.s3{color:#7be8a3;font-size:12px;width:calc(100% - 22px)}
 .inline-input.s3:focus{color:var(--text)}
+
+/* URL+S3 wrapped with optional ↗ link */
+.link-cell{display:flex;align-items:center;gap:2px}
+
+/* Notes textarea — multiline inline */
+textarea.inline-input.notes{
+  font-family:'DM Sans',sans-serif;font-size:13px;
+  color:var(--text2);line-height:1.5;
+  min-height:38px;resize:vertical;
+  width:100%;
+}
+textarea.inline-input.notes:focus{color:var(--text)}
+
 .inline-link-go{
-  display:inline-block;margin-left:4px;color:var(--text2);text-decoration:none;
-  font-size:14px;font-weight:700;vertical-align:middle;
-  padding:2px 4px;border-radius:4px;transition:all 0.15s;
+  display:inline-block;color:var(--text2);text-decoration:none;
+  font-size:14px;font-weight:700;
+  padding:5px 6px;border-radius:4px;transition:all 0.15s;
+  flex-shrink:0;
 }
 .inline-link-go:hover{color:var(--accent);background:var(--surface2)}
 
@@ -398,7 +433,6 @@ const COUNTRIES   = ["Mexico", "CADR", "Philippines", "Vietnam", "India", "Saudi
 const TYPES       = ["E-commerce", "Forum", "Social", "Other"];
 
 let rows = {};        // {firebaseKey: rowData}
-let editingId = null;
 let isOffline = false;
 
 // ── Firebase: load + listen ────────────────────────────────────────
@@ -455,7 +489,7 @@ function start() {
 
     rows = data;
     showOnline();
-    render();
+    renderPreservingFocus();
   }, err => {
     console.error("Firebase read failed:", err);
     isOffline = true;
@@ -525,16 +559,75 @@ function render() {
   body.innerHTML = filtered.map(([id, r]) => renderRow(id, r)).join("");
 }
 
-function renderRow(id, r) {
-  if (editingId === id) return renderEditingRow(id, r);
+/**
+ * Wraps render() so we don't clobber the input cell the user is currently
+ * typing in. Captures focused element + cursor position, re-renders, then
+ * restores. Without this, Firebase's .on('value') would yank focus away
+ * every time a teammate (or even this user) saves anything.
+ */
+function renderPreservingFocus() {
+  const active = document.activeElement;
+  let focusInfo = null;
 
+  if (active && active.tagName === "INPUT" || (active && active.tagName === "TEXTAREA")) {
+    const row = active.closest("tr[data-id]");
+    if (row) {
+      focusInfo = {
+        rowId: row.dataset.id,
+        className: active.className,
+        selStart: active.selectionStart,
+        selEnd: active.selectionEnd,
+        currentValue: active.value,
+      };
+    }
+  } else if (active && active.tagName === "SELECT") {
+    const row = active.closest("tr[data-id]");
+    if (row) {
+      focusInfo = { rowId: row.dataset.id, className: active.className, isSelect: true };
+    }
+  }
+
+  render();
+
+  if (focusInfo) {
+    const row = document.querySelector(`tr[data-id="${focusInfo.rowId}"]`);
+    if (row) {
+      // Find the same-class element in the same row
+      const firstClass = focusInfo.className.split(" ").find(c => c && c !== "inline-input" && c !== "inline-select");
+      const target = row.querySelector(`.${firstClass}`) || row.querySelector(`.${focusInfo.className.split(' ')[0]}`);
+      if (target) {
+        target.focus();
+        if (!focusInfo.isSelect) {
+          // Restore the value the user was mid-typing (Firebase may have not seen latest keystroke yet)
+          if (focusInfo.currentValue && target.value !== focusInfo.currentValue) {
+            target.value = focusInfo.currentValue;
+          }
+          try {
+            target.setSelectionRange(focusInfo.selStart, focusInfo.selEnd);
+          } catch (e) { /* setSelectionRange not supported on this input type */ }
+        }
+      }
+    }
+  }
+}
+
+function renderRow(id, r) {
   return `
     <tr data-id="${id}">
-      <td class="cell-source">
-        ${escapeHtml(r.source || "—")}
-        ${r.subsource ? `<span class="cell-source-sub">${escapeHtml(r.subsource)}</span>` : ""}
+      <td>
+        <input class="inline-input source" value="${escapeAttr(r.source || '')}" placeholder="Source name"
+               onblur="quickUpdate('${id}','source',this.value.trim())"
+               onkeydown="if(event.key==='Enter'){this.blur();event.preventDefault();}"/>
+        <input class="inline-input subsource" value="${escapeAttr(r.subsource || '')}" placeholder="Sub-source / detail"
+               onblur="quickUpdate('${id}','subsource',this.value.trim())"
+               onkeydown="if(event.key==='Enter'){this.blur();event.preventDefault();}"/>
       </td>
-      <td>${typeCell(r.type)}</td>
+      <td>
+        <select class="inline-select type type-${(r.type||'other').toLowerCase().replace('-','').replace(' ','')} ${!r.type ? 'missing' : ''}" onchange="quickUpdate('${id}','type',this.value)">
+          ${!r.type ? `<option value="" selected>⚠ Set</option>` : ""}
+          ${TYPES.map(t => `<option value="${escapeAttr(t)}" ${r.type === t ? "selected" : ""}>${t}</option>`).join("")}
+        </select>
+      </td>
       <td>
         <select class="inline-select region" onchange="quickUpdate('${id}','region',this.value)">
           ${REGIONS.map(rg => `<option value="${escapeAttr(rg)}" ${r.region === rg ? "selected" : ""}>${rg}</option>`).join("")}
@@ -558,77 +651,42 @@ function renderRow(id, r) {
         </select>
       </td>
       <td>
-        <input class="inline-input url" value="${escapeAttr(r.url || '')}" placeholder="https://..."
-               onblur="quickUpdate('${id}','url',this.value.trim())"
-               onkeydown="if(event.key==='Enter'){this.blur();event.preventDefault();}"/>
-        ${r.url ? `<a href="${escapeAttr(r.url)}" target="_blank" class="inline-link-go" title="Open URL">↗</a>` : ""}
-      </td>
-      <td>
-        <input class="inline-input s3" value="${escapeAttr(r.s3 || '')}" placeholder="s3://... or paste URL when done"
-               onblur="quickUpdate('${id}','s3',this.value.trim())"
-               onkeydown="if(event.key==='Enter'){this.blur();event.preventDefault();}"/>
-        ${r.s3 ? `<a href="${escapeAttr(r.s3)}" target="_blank" class="inline-link-go" title="Open S3 link">↗</a>` : ""}
-      </td>
-      <td class="cell-notes">${escapeHtml(r.notes || "")}</td>
-      <td>
-        <div class="actions">
-          <button class="icon-btn edit"   onclick="startEdit('${id}')"  title="Full edit (source, type, notes)">✎</button>
-          <button class="icon-btn delete" onclick="deleteRow('${id}')"  title="Delete">🗑</button>
+        <div class="link-cell">
+          <input class="inline-input url" value="${escapeAttr(r.url || '')}" placeholder="https://..."
+                 onblur="quickUpdate('${id}','url',this.value.trim())"
+                 onkeydown="if(event.key==='Enter'){this.blur();event.preventDefault();}"/>
+          ${r.url ? `<a href="${escapeAttr(r.url)}" target="_blank" class="inline-link-go" title="Open URL">↗</a>` : ""}
         </div>
+      </td>
+      <td>
+        <div class="link-cell">
+          <input class="inline-input s3" value="${escapeAttr(r.s3 || '')}" placeholder="s3://... when done"
+                 onblur="quickUpdate('${id}','s3',this.value.trim())"
+                 onkeydown="if(event.key==='Enter'){this.blur();event.preventDefault();}"/>
+          ${r.s3 ? `<a href="${escapeAttr(r.s3)}" target="_blank" class="inline-link-go" title="Open S3 link">↗</a>` : ""}
+        </div>
+      </td>
+      <td>
+        <textarea class="inline-input notes" placeholder="Notes / task details..."
+                  onblur="quickUpdate('${id}','notes',this.value.trim())"
+                  onkeydown="if(event.key==='Enter'&&event.metaKey){this.blur();event.preventDefault();}">${escapeHtml(r.notes || '')}</textarea>
+      </td>
+      <td>
+        <button class="icon-btn delete" onclick="deleteRow('${id}')" title="Delete row">🗑</button>
       </td>
     </tr>`;
 }
 
-function typeCell(type) {
-  if (!type) {
-    return `<span class="country-missing" title="Type not set">⚠ Set</span>`;
-  }
-  const cls = type.toLowerCase().replace("-", "").replace(" ", "");
-  return `<span class="type-chip ${cls}">${escapeHtml(type)}</span>`;
-}
-
-function renderEditingRow(id, r) {
-  const asOpts = ASSIGNEES.map(a => `<option value="${escapeAttr(a)}" ${r.assignee === a ? "selected" : ""}>${a || "Unassigned"}</option>`).join("");
-  const stOpts = STATUSES.map(s => `<option value="${escapeAttr(s)}" ${r.status === s ? "selected" : ""}>${s}</option>`).join("");
-  const rgOpts = REGIONS.map(rg => `<option value="${escapeAttr(rg)}" ${r.region === rg ? "selected" : ""}>${rg}</option>`).join("");
-  const coOpts = (r.country ? "" : `<option value="" selected>— Pick a country —</option>`) +
-                 COUNTRIES.map(co => `<option value="${escapeAttr(co)}" ${r.country === co ? "selected" : ""}>${co}</option>`).join("");
-  const tyOpts = (r.type ? "" : `<option value="" selected>— Pick a type —</option>`) +
-                 TYPES.map(t => `<option value="${escapeAttr(t)}" ${r.type === t ? "selected" : ""}>${t}</option>`).join("");
-
-  return `
-    <tr data-id="${id}" class="editing">
-      <td>
-        <input class="edit-input" id="edit-source-${id}" value="${escapeAttr(r.source || "")}" placeholder="Source"/>
-        <input class="edit-input" id="edit-subsource-${id}" value="${escapeAttr(r.subsource || "")}" placeholder="Sub-source / detail" style="margin-top:5px;font-family:'Space Mono',monospace;font-size:12px"/>
-      </td>
-      <td><select class="edit-select" id="edit-type-${id}">${tyOpts}</select></td>
-      <td><select class="edit-select" id="edit-region-${id}">${rgOpts}</select></td>
-      <td><select class="edit-select" id="edit-country-${id}">${coOpts}</select></td>
-      <td><select class="edit-select" id="edit-assignee-${id}">${asOpts}</select></td>
-      <td><select class="edit-select" id="edit-status-${id}">${stOpts}</select></td>
-      <td><input class="edit-input" id="edit-url-${id}" value="${escapeAttr(r.url || "")}" placeholder="https://..."/></td>
-      <td><input class="edit-input" id="edit-s3-${id}" value="${escapeAttr(r.s3 || "")}" placeholder="s3://bucket/path or URL"/></td>
-      <td><textarea class="edit-input" id="edit-notes-${id}" placeholder="Notes (include task details here)">${escapeHtml(r.notes || "")}</textarea></td>
-      <td>
-        <div class="actions">
-          <button class="icon-btn save"   onclick="saveEdit('${id}')"  title="Save">✓</button>
-          <button class="icon-btn cancel" onclick="cancelEdit()"       title="Cancel">✕</button>
-        </div>
-      </td>
-    </tr>`;
-}
-
-// ── Inline quick-update (no edit pencil needed) ────────────────────
+// ── Inline quick-update (saves the moment a cell changes) ──────────
 function quickUpdate(id, field, value) {
   const r = rows[id];
   if (!r) return;
   if (r[field] === value) return; // no change, skip write
 
-  // Don't allow blanking country (still required)
-  if (field === "country" && !value) {
-    alert("Country is required. Pick 'Multi' if the task covers multiple countries.");
-    render(); // re-render to reset dropdown to old value
+  // Required fields can't be blanked — re-render to revert UI
+  if ((field === "country" || field === "type") && !value) {
+    alert(`${field === "country" ? "Country" : "Type"} is required. Pick a value (use 'Multi' for country if the task covers multiple).`);
+    render();
     return;
   }
 
@@ -645,58 +703,6 @@ function quickUpdate(id, field, value) {
     render();
   }
 }
-function startEdit(id) {
-  editingId = id;
-  render();
-  // Focus first input
-  setTimeout(() => { const el = document.getElementById(`edit-source-${id}`); if (el) el.focus(); }, 50);
-}
-
-function cancelEdit() {
-  editingId = null;
-  render();
-}
-
-function saveEdit(id) {
-  const country = document.getElementById(`edit-country-${id}`).value;
-  const type    = document.getElementById(`edit-type-${id}`).value;
-  if (!type) {
-    alert("Please pick a Type (E-commerce / Forum / Social / Other) before saving.");
-    document.getElementById(`edit-type-${id}`).focus();
-    return;
-  }
-  if (!country) {
-    alert("Please pick a Country before saving. Use 'Multi' if the task covers more than one country.");
-    document.getElementById(`edit-country-${id}`).focus();
-    return;
-  }
-
-  const updated = {
-    source:    document.getElementById(`edit-source-${id}`).value.trim(),
-    subsource: document.getElementById(`edit-subsource-${id}`).value.trim(),
-    type:      type,
-    region:    document.getElementById(`edit-region-${id}`).value,
-    country:   country,
-    assignee:  document.getElementById(`edit-assignee-${id}`).value,
-    status:    document.getElementById(`edit-status-${id}`).value,
-    url:       document.getElementById(`edit-url-${id}`).value.trim(),
-    s3:        document.getElementById(`edit-s3-${id}`).value.trim(),
-    notes:     document.getElementById(`edit-notes-${id}`).value.trim(),
-  };
-
-  editingId = null;
-  if (dbRef) {
-    dbRef.child(id).set(updated).then(() => {
-      document.getElementById("lastUpdate").textContent = new Date().toLocaleTimeString();
-    }).catch(err => {
-      console.error("Save failed:", err);
-      alert("Save failed: " + err.message);
-    });
-  } else {
-    rows[id] = updated;
-    render();
-  }
-}
 
 function addRow() {
   const newRow = {
@@ -705,10 +711,14 @@ function addRow() {
   };
 
   if (dbRef) {
-    const newRef = dbRef.push();
-    newRef.set(newRow).then(() => {
-      editingId = newRef.key;
-      // .on listener will re-render and we'll be in edit mode for the new row
+    dbRef.push(newRow).then(refOrNothing => {
+      document.getElementById("lastUpdate").textContent = new Date().toLocaleTimeString();
+      // Focus the new row's source input once it renders
+      setTimeout(() => {
+        const inputs = document.querySelectorAll('tr[data-id] input.source');
+        const last = inputs[inputs.length - 1];
+        if (last) { last.focus(); last.scrollIntoView({behavior:'smooth', block:'center'}); }
+      }, 150);
     }).catch(err => {
       console.error("Add failed:", err);
       alert("Add failed: " + err.message);
@@ -716,7 +726,6 @@ function addRow() {
   } else {
     const id = "local-" + Date.now();
     rows[id] = newRow;
-    editingId = id;
     render();
   }
 }
