@@ -135,6 +135,17 @@ tbody tr.editing td{background:rgba(91,154,255,0.06)}
   white-space:nowrap;cursor:help;
 }
 
+/* Type chip — distinguishes E-commerce / Forum / Social / Other */
+.type-chip{
+  font-family:'Space Mono',monospace;font-size:11px;font-weight:700;
+  text-transform:uppercase;letter-spacing:1px;
+  padding:5px 9px;border-radius:6px;display:inline-block;white-space:nowrap;
+}
+.type-chip.ecommerce{background:rgba(74,222,128,0.16);color:#7be8a3;border:1px solid rgba(74,222,128,0.3)}
+.type-chip.forum    {background:rgba(251,191,36,0.16);color:#fcd053;border:1px solid rgba(251,191,36,0.3)}
+.type-chip.social   {background:rgba(122,114,255,0.18);color:#b8b3ff;border:1px solid rgba(122,114,255,0.35)}
+.type-chip.other    {background:var(--gray-bg);color:var(--text2);border:1px solid var(--border)}
+
 /* Inputs in edit mode */
 .edit-input{width:100%;font-family:'DM Sans',sans-serif;font-size:14px;padding:8px 10px;border-radius:6px;border:1px solid var(--accent);background:var(--surface);color:var(--text);outline:none;line-height:1.5}
 .edit-select{width:100%;font-family:'DM Sans',sans-serif;font-size:14px;padding:8px 10px;border-radius:6px;border:1px solid var(--accent);background:var(--surface);color:var(--text);outline:none}
@@ -181,6 +192,7 @@ textarea.edit-input{resize:vertical;min-height:46px;font-family:'DM Sans',sans-s
     <div class="hero-actions">
       <a class="btn btn-ghost" href="index.html">← Hub</a>
       <a class="btn" href="comparison.html">Sourcing Comparison</a>
+      <button class="btn" onclick="exportCSV()" title="Download filtered rows as CSV">⬇ Export CSV</button>
       <button class="btn btn-primary" onclick="addRow()">+ Add Row</button>
     </div>
   </div>
@@ -203,6 +215,16 @@ textarea.edit-input{resize:vertical;min-height:46px;font-family:'DM Sans',sans-s
 </div>
 
 <div class="filters">
+  <div class="filter-group">
+    <span class="filter-label">Type</span>
+    <select id="filterType" onchange="applyFilters()">
+      <option value="">All</option>
+      <option value="E-commerce">E-commerce</option>
+      <option value="Forum">Forum</option>
+      <option value="Social">Social</option>
+      <option value="Other">Other</option>
+    </select>
+  </div>
   <div class="filter-group">
     <span class="filter-label">Assignee</span>
     <select id="filterAssignee" onchange="applyFilters()">
@@ -264,19 +286,20 @@ textarea.edit-input{resize:vertical;min-height:46px;font-family:'DM Sans',sans-s
   <table>
     <thead>
       <tr>
-        <th style="width:15%">Source</th>
-        <th style="width:8%">Region</th>
+        <th style="width:14%">Source</th>
+        <th style="width:7%">Type</th>
+        <th style="width:7%">Region</th>
         <th style="width:9%">Country</th>
-        <th style="width:22%">Task</th>
-        <th style="width:10%">Assignee</th>
-        <th style="width:9%">Status</th>
-        <th style="width:16%">Done At (S3 / URL)</th>
-        <th style="width:9%">Notes</th>
+        <th style="width:20%">Task</th>
+        <th style="width:9%">Assignee</th>
+        <th style="width:8%">Status</th>
+        <th style="width:14%">Done At (S3 / URL)</th>
+        <th style="width:10%">Notes</th>
         <th style="width:2%"></th>
       </tr>
     </thead>
     <tbody id="rowsBody">
-      <tr class="empty-row"><td colspan="9">Loading...</td></tr>
+      <tr class="empty-row"><td colspan="10">Loading...</td></tr>
     </tbody>
   </table>
 </div>
@@ -288,45 +311,46 @@ textarea.edit-input{resize:vertical;min-height:46px;font-family:'DM Sans',sans-s
 // ═══════════════════════════════════════════════════════════════
 const SEED_ROWS = [
   // E-COMMERCE — DONE
-  {source:"Amazon",          subsource:"Products MX/IN/KSA", region:"Global",       country:"Multi",         task:"Product scrape (1,258 products)",                       assignee:"Asad",   status:"Done",        s3:"s3://wikitablescrapexample/abbott_scraping/", notes:"3 markets covered"},
-  {source:"Mercado Libre",   subsource:"MX + CADR",          region:"LatAm",        country:"Mexico",        task:"Product scrape",                                         assignee:"Asad",   status:"Done",        s3:"s3://wikitablescrapexample/abbott_scraping/latin_america/", notes:""},
-  {source:"Shopee",          subsource:"PH + VN products",   region:"Asia",         country:"Multi",         task:"Product scrape (1,611 unique products)",                 assignee:"Asad",   status:"Done",        s3:"s3://wikitablescrapexample/abbott_scraping/shopee_v2/", notes:""},
-  {source:"FirstCry",        subsource:"India products",     region:"South Asia",   country:"India",         task:"Product scrape (2,653 products)",                        assignee:"Asad",   status:"Done",        s3:"s3://wikitablescrapexample/abbott_scraping/south_asia/firstcry_IN_20260515_113138.json", notes:""},
-  {source:"Noon",            subsource:"KSA products",       region:"Middle East",  country:"Saudi Arabia",  task:"Product scrape (100 products)",                          assignee:"Asad",   status:"Done",        s3:"s3://wikitablescrapexample/abbott_scraping/middle_east/noon_KSA_20260515_115227.json", notes:""},
+  {source:"Amazon",          subsource:"Products MX/IN/KSA", type:"E-commerce", region:"Global",       country:"Multi",         task:"Product scrape (1,258 products)",                       assignee:"Asad",   status:"Done",        s3:"s3://wikitablescrapexample/abbott_scraping/", notes:"3 markets covered"},
+  {source:"Mercado Libre",   subsource:"MX + CADR",          type:"E-commerce", region:"LatAm",        country:"Mexico",        task:"Product scrape",                                         assignee:"Asad",   status:"Done",        s3:"s3://wikitablescrapexample/abbott_scraping/latin_america/", notes:""},
+  {source:"Shopee",          subsource:"PH + VN products",   type:"E-commerce", region:"Asia",         country:"Multi",         task:"Product scrape (1,611 unique products)",                 assignee:"Asad",   status:"Done",        s3:"s3://wikitablescrapexample/abbott_scraping/shopee_v2/", notes:""},
+  {source:"FirstCry",        subsource:"India products",     type:"E-commerce", region:"South Asia",   country:"India",         task:"Product scrape (2,653 products)",                        assignee:"Asad",   status:"Done",        s3:"s3://wikitablescrapexample/abbott_scraping/south_asia/firstcry_IN_20260515_113138.json", notes:""},
+  {source:"Noon",            subsource:"KSA products",       type:"E-commerce", region:"Middle East",  country:"Saudi Arabia",  task:"Product scrape (100 products)",                          assignee:"Asad",   status:"Done",        s3:"s3://wikitablescrapexample/abbott_scraping/middle_east/noon_KSA_20260515_115227.json", notes:""},
 
   // E-COMMERCE — REVIEWS (running / pending)
-  {source:"Shopee",          subsource:"PH + VN reviews",    region:"Asia",         country:"Multi",         task:"Review scrape (~135K expected, batches of 200 to S3)",   assignee:"Asad",   status:"Running",     s3:"s3://wikitablescrapexample/abbott_scraping/shopee_v2/reviews/", notes:"Live dashboard: 89.116.51.51:8767"},
-  {source:"Noon",            subsource:"KSA reviews",        region:"Middle East",  country:"Saudi Arabia",  task:"Review scrape via Apify shahidirfan actor",              assignee:"Asad",   status:"Pending",     s3:"", notes:"~£20, 1-2 hr runtime"},
-  {source:"FirstCry",        subsource:"India reviews",      region:"South Asia",   country:"India",         task:"Review scrape (extend product scrape, ~50K expected)",   assignee:"Asad",   status:"Pending",     s3:"", notes:"~half day build"},
-  {source:"Amazon",          subsource:"Reviews bypass",     region:"Global",       country:"Multi",         task:"Top-10 via Oxylabs amazon_product + Woot for US-syndicated ASINs", assignee:"Asad", status:"Pending", s3:"", notes:"100-review wall confirmed on every public scraper"},
+  {source:"Shopee",          subsource:"PH + VN reviews",    type:"E-commerce", region:"Asia",         country:"Multi",         task:"Review scrape (~135K expected, batches of 200 to S3)",   assignee:"Asad",   status:"Running",     s3:"s3://wikitablescrapexample/abbott_scraping/shopee_v2/reviews/", notes:"Live dashboard: 89.116.51.51:8767"},
+  {source:"Noon",            subsource:"KSA reviews",        type:"E-commerce", region:"Middle East",  country:"Saudi Arabia",  task:"Review scrape via Apify shahidirfan actor",              assignee:"Asad",   status:"Pending",     s3:"", notes:"~£20, 1-2 hr runtime"},
+  {source:"FirstCry",        subsource:"India reviews",      type:"E-commerce", region:"South Asia",   country:"India",         task:"Review scrape (extend product scrape, ~50K expected)",   assignee:"Asad",   status:"Pending",     s3:"", notes:"~half day build"},
+  {source:"Amazon",          subsource:"Reviews bypass",     type:"E-commerce", region:"Global",       country:"Multi",         task:"Top-10 via Oxylabs amazon_product + Woot for US-syndicated ASINs", assignee:"Asad", status:"Pending", s3:"", notes:"100-review wall confirmed on every public scraper"},
 
-  // FORUMS / DISCOURSE — TO BUILD
-  {source:"Smart Parenting", subsource:"PH parentchat",      region:"Asia",         country:"Philippines",   task:"Forum scrape (SMF) — Similac/Pediasure threads",         assignee:"",       status:"Pending",     s3:"", notes:""},
-  {source:"Webtretho",       subsource:"VN forum",           region:"Asia",         country:"Vietnam",       task:"Forum scrape — main VN parenting community",             assignee:"",       status:"Pending",     s3:"", notes:""},
-  {source:"Con Cung",        subsource:"VN product reviews", region:"Asia",         country:"Vietnam",       task:"Review scrape per product page",                         assignee:"",       status:"Pending",     s3:"", notes:""},
-  {source:"BabyCenter",      subsource:"Español (LatAm)",    region:"LatAm",        country:"Mexico",        task:"Forum + community scrape",                               assignee:"",       status:"Pending",     s3:"", notes:""},
-  {source:"BabyCenter",      subsource:"India community",    region:"South Asia",   country:"India",         task:"Forum + community scrape",                               assignee:"",       status:"Pending",     s3:"", notes:""},
-  {source:"MomJunction",     subsource:"India articles+cmts",region:"South Asia",   country:"India",         task:"Article comments scrape (lower priority)",               assignee:"",       status:"Pending",     s3:"", notes:"Editorial site, not a true forum"},
-  {source:"Supermama.me",    subsource:"Middle East",        region:"Middle East",  country:"Saudi Arabia",  task:"Content scrape — feasibility check first",               assignee:"",       status:"Pending",     s3:"", notes:"Sparse Abbott content"},
+  // FORUMS / DISCOURSE
+  {source:"Smart Parenting", subsource:"PH parentchat",      type:"Forum",      region:"Asia",         country:"Philippines",   task:"Forum scrape (SMF) — Similac/Pediasure threads",         assignee:"",       status:"Pending",     s3:"", notes:""},
+  {source:"Webtretho",       subsource:"VN forum",           type:"Forum",      region:"Asia",         country:"Vietnam",       task:"Forum scrape — main VN parenting community",             assignee:"",       status:"Pending",     s3:"", notes:""},
+  {source:"Con Cung",        subsource:"VN product reviews", type:"E-commerce", region:"Asia",         country:"Vietnam",       task:"Review scrape per product page",                         assignee:"",       status:"Pending",     s3:"", notes:""},
+  {source:"BabyCenter",      subsource:"Español (LatAm)",    type:"Forum",      region:"LatAm",        country:"Mexico",        task:"Forum + community scrape",                               assignee:"",       status:"Pending",     s3:"", notes:""},
+  {source:"BabyCenter",      subsource:"India community",    type:"Forum",      region:"South Asia",   country:"India",         task:"Forum + community scrape",                               assignee:"",       status:"Pending",     s3:"", notes:""},
+  {source:"MomJunction",     subsource:"India articles+cmts",type:"Forum",      region:"South Asia",   country:"India",         task:"Article comments scrape (lower priority)",               assignee:"",       status:"Pending",     s3:"", notes:"Editorial site, not a true forum"},
+  {source:"Supermama.me",    subsource:"Middle East",        type:"Forum",      region:"Middle East",  country:"Saudi Arabia",  task:"Content scrape — feasibility check first",               assignee:"",       status:"Pending",     s3:"", notes:"Sparse Abbott content"},
 
   // SOCIAL via APIFY
-  {source:"Reddit",          subsource:"Formula subs",       region:"Global",       country:"Multi",         task:"Apify scrape — r/FormulaFeeders, r/Mommit, r/beyondthebump, market-specific subs", assignee:"", status:"Pending", s3:"", notes:"Need subreddit URL list from team"},
-  {source:"Facebook",        subsource:"Parenting groups",   region:"Global",       country:"Multi",         task:"Apify scrape of specified parenting groups per market", assignee:"",       status:"Pending",     s3:"", notes:"Need group URL list from team"},
+  {source:"Reddit",          subsource:"Formula subs",       type:"Social",     region:"Global",       country:"Multi",         task:"Apify scrape — r/FormulaFeeders, r/Mommit, r/beyondthebump, market-specific subs", assignee:"", status:"Pending", s3:"", notes:"Need subreddit URL list from team"},
+  {source:"Facebook",        subsource:"Parenting groups",   type:"Social",     region:"Global",       country:"Multi",         task:"Apify scrape of specified parenting groups per market", assignee:"",       status:"Pending",     s3:"", notes:"Need group URL list from team"},
 
   // SOCIAL via BRANDWATCH
-  {source:"YouTube",         subsource:"All markets",        region:"Global",       country:"Multi",         task:"Pull via Brandwatch",                                    assignee:"Danny",  status:"In Progress", s3:"", notes:"Brandwatch workflow"},
-  {source:"X (Twitter)",     subsource:"All markets",        region:"Global",       country:"Multi",         task:"Pull via Brandwatch",                                    assignee:"Danny",  status:"In Progress", s3:"", notes:"Brandwatch workflow"},
+  {source:"YouTube",         subsource:"All markets",        type:"Social",     region:"Global",       country:"Multi",         task:"Pull via Brandwatch",                                    assignee:"Danny",  status:"In Progress", s3:"", notes:"Brandwatch workflow"},
+  {source:"X (Twitter)",     subsource:"All markets",        type:"Social",     region:"Global",       country:"Multi",         task:"Pull via Brandwatch",                                    assignee:"Danny",  status:"In Progress", s3:"", notes:"Brandwatch workflow"},
 
   // OPEN QUESTIONS / DECISION-PENDING
-  {source:"Instagram",       subsource:"All markets",        region:"Global",       country:"Multi",         task:"Decide: Apify per-platform actor or skip (not on Brandwatch)", assignee:"Danny", status:"Review", s3:"", notes:"~£50-100 per market if in scope"},
-  {source:"TikTok",          subsource:"All markets",        region:"Global",       country:"Multi",         task:"Decide: Apify per-platform actor or skip (not on Brandwatch)", assignee:"Danny", status:"Review", s3:"", notes:"~£50-100 per market if in scope"},
-  {source:"Instagram Reels", subsource:"All markets",        region:"Global",       country:"Multi",         task:"Decide: in scope or covered under Instagram?",          assignee:"Danny",  status:"Review",      s3:"", notes:""},
+  {source:"Instagram",       subsource:"All markets",        type:"Social",     region:"Global",       country:"Multi",         task:"Decide: Apify per-platform actor or skip (not on Brandwatch)", assignee:"Danny", status:"Review", s3:"", notes:"~£50-100 per market if in scope"},
+  {source:"TikTok",          subsource:"All markets",        type:"Social",     region:"Global",       country:"Multi",         task:"Decide: Apify per-platform actor or skip (not on Brandwatch)", assignee:"Danny", status:"Review", s3:"", notes:"~£50-100 per market if in scope"},
+  {source:"Instagram Reels", subsource:"All markets",        type:"Social",     region:"Global",       country:"Multi",         task:"Decide: in scope or covered under Instagram?",          assignee:"Danny",  status:"Review",      s3:"", notes:""},
 ];
 
 const ASSIGNEES   = ["", "Asad", "Danny", "Daniel"];
 const STATUSES    = ["Done", "Running", "In Progress", "Pending", "Blocked", "Review"];
 const REGIONS     = ["LatAm", "Asia", "South Asia", "Middle East", "Global"];
 const COUNTRIES   = ["Mexico", "CADR", "Philippines", "Vietnam", "India", "Saudi Arabia", "UAE", "Multi"];
+const TYPES       = ["E-commerce", "Forum", "Social", "Other"];
 
 let rows = {};        // {firebaseKey: rowData}
 let editingId = null;
@@ -357,18 +381,21 @@ function start() {
       return; // .on will re-fire with new data
     }
 
-    // Auto-backfill: any existing row missing a `country` field gets inferred
-    // from region (best-effort) so the column is never blank for any user.
+    // Auto-backfill: any existing row missing `country` or `type` gets inferred
+    // so the columns are never blank for any user.
     const patches = {};
     Object.entries(data).forEach(([id, r]) => {
       if (!r.country) {
         patches[`${id}/country`] = inferCountry(r.region);
-        // Also patch the in-memory copy so render shows the value immediately
         data[id].country = inferCountry(r.region);
+      }
+      if (!r.type) {
+        patches[`${id}/type`] = inferType(r.source, r.subsource);
+        data[id].type = inferType(r.source, r.subsource);
       }
     });
     if (Object.keys(patches).length > 0) {
-      console.log(`Backfilling country on ${Object.keys(patches).length} legacy rows`);
+      console.log(`Backfilling ${Object.keys(patches).length} legacy field(s)`);
       dbRef.update(patches).catch(err => console.warn("Backfill update failed:", err));
     }
 
@@ -403,6 +430,7 @@ function getFilteredRows() {
   const fS = document.getElementById("filterStatus").value;
   const fR = document.getElementById("filterRegion").value;
   const fC = document.getElementById("filterCountry").value;
+  const fTy = document.getElementById("filterType").value;
   const fT = (document.getElementById("searchInput").value || "").toLowerCase().trim();
 
   return Object.entries(rows).filter(([id, r]) => {
@@ -411,8 +439,9 @@ function getFilteredRows() {
     if (fS && r.status !== fS) return false;
     if (fR && r.region !== fR) return false;
     if (fC && r.country !== fC) return false;
+    if (fTy && r.type !== fTy) return false;
     if (fT) {
-      const hay = `${r.source||""} ${r.subsource||""} ${r.task||""} ${r.notes||""} ${r.country||""}`.toLowerCase();
+      const hay = `${r.source||""} ${r.subsource||""} ${r.task||""} ${r.notes||""} ${r.country||""} ${r.type||""}`.toLowerCase();
       if (!hay.includes(fT)) return false;
     }
     return true;
@@ -435,7 +464,7 @@ function render() {
   document.getElementById("statBlocked").textContent    = allRows.filter(r => r.status === "Blocked").length;
 
   if (filtered.length === 0) {
-    body.innerHTML = `<tr class="empty-row"><td colspan="9">No rows match the current filters.</td></tr>`;
+    body.innerHTML = `<tr class="empty-row"><td colspan="10">No rows match the current filters.</td></tr>`;
     return;
   }
 
@@ -461,6 +490,7 @@ function renderRow(id, r) {
         ${escapeHtml(r.source || "—")}
         ${r.subsource ? `<span class="cell-source-sub">${escapeHtml(r.subsource)}</span>` : ""}
       </td>
+      <td>${typeCell(r.type)}</td>
       <td class="cell-region">${escapeHtml(r.region || "—")}</td>
       <td>${countryCell(r.country)}</td>
       <td class="cell-task">${escapeHtml(r.task || "")}</td>
@@ -477,6 +507,14 @@ function renderRow(id, r) {
     </tr>`;
 }
 
+function typeCell(type) {
+  if (!type) {
+    return `<span class="country-missing" title="Type not set">⚠ Set</span>`;
+  }
+  const cls = type.toLowerCase().replace("-", "").replace(" ", "");
+  return `<span class="type-chip ${cls}">${escapeHtml(type)}</span>`;
+}
+
 function countryCell(country) {
   if (!country) {
     return `<span class="country-missing" title="Country not set — edit row to assign">⚠ Not set</span>`;
@@ -490,6 +528,8 @@ function renderEditingRow(id, r) {
   const rgOpts = REGIONS.map(rg => `<option value="${escapeAttr(rg)}" ${r.region === rg ? "selected" : ""}>${rg}</option>`).join("");
   const coOpts = (r.country ? "" : `<option value="" selected>— Pick a country —</option>`) +
                  COUNTRIES.map(co => `<option value="${escapeAttr(co)}" ${r.country === co ? "selected" : ""}>${co}</option>`).join("");
+  const tyOpts = (r.type ? "" : `<option value="" selected>— Pick a type —</option>`) +
+                 TYPES.map(t => `<option value="${escapeAttr(t)}" ${r.type === t ? "selected" : ""}>${t}</option>`).join("");
 
   return `
     <tr data-id="${id}" class="editing">
@@ -497,6 +537,7 @@ function renderEditingRow(id, r) {
         <input class="edit-input" id="edit-source-${id}" value="${escapeAttr(r.source || "")}" placeholder="Source"/>
         <input class="edit-input" id="edit-subsource-${id}" value="${escapeAttr(r.subsource || "")}" placeholder="Sub-source / detail" style="margin-top:5px;font-family:'Space Mono',monospace;font-size:12px"/>
       </td>
+      <td><select class="edit-select" id="edit-type-${id}">${tyOpts}</select></td>
       <td><select class="edit-select" id="edit-region-${id}">${rgOpts}</select></td>
       <td><select class="edit-select" id="edit-country-${id}">${coOpts}</select></td>
       <td><textarea class="edit-input" id="edit-task-${id}" placeholder="Task description">${escapeHtml(r.task || "")}</textarea></td>
@@ -528,6 +569,12 @@ function cancelEdit() {
 
 function saveEdit(id) {
   const country = document.getElementById(`edit-country-${id}`).value;
+  const type    = document.getElementById(`edit-type-${id}`).value;
+  if (!type) {
+    alert("Please pick a Type (E-commerce / Forum / Social / Other) before saving.");
+    document.getElementById(`edit-type-${id}`).focus();
+    return;
+  }
   if (!country) {
     alert("Please pick a Country before saving. Use 'Multi' if the task covers more than one country.");
     document.getElementById(`edit-country-${id}`).focus();
@@ -537,6 +584,7 @@ function saveEdit(id) {
   const updated = {
     source:    document.getElementById(`edit-source-${id}`).value.trim(),
     subsource: document.getElementById(`edit-subsource-${id}`).value.trim(),
+    type:      type,
     region:    document.getElementById(`edit-region-${id}`).value,
     country:   country,
     task:      document.getElementById(`edit-task-${id}`).value.trim(),
@@ -562,7 +610,7 @@ function saveEdit(id) {
 
 function addRow() {
   const newRow = {
-    source:"", subsource:"", region:"Global", country:"Multi", task:"",
+    source:"", subsource:"", type:"Other", region:"Global", country:"Multi", task:"",
     assignee:"", status:"Pending", s3:"", notes:""
   };
 
@@ -601,6 +649,69 @@ function deleteRow(id) {
   }
 }
 
+// ── CSV Export ─────────────────────────────────────────────────────
+function exportCSV() {
+  const filtered = getFilteredRows();
+  if (filtered.length === 0) {
+    alert("No rows to export. Adjust filters and try again.");
+    return;
+  }
+
+  const headers = ["Source", "Sub-source", "Type", "Region", "Country", "Task", "Assignee", "Status", "Done At (S3 / URL)", "Notes"];
+  const lines = [headers.map(csvField).join(",")];
+
+  // Sort rows for export: by type, then country, then status — gives a tidy CSV
+  const sorted = filtered.slice().sort((a, b) => {
+    const ra = a[1], rb = b[1];
+    return (ra.type||"").localeCompare(rb.type||"") ||
+           (ra.country||"").localeCompare(rb.country||"") ||
+           (ra.status||"").localeCompare(rb.status||"");
+  });
+
+  for (const [id, r] of sorted) {
+    lines.push([
+      r.source, r.subsource, r.type, r.region, r.country,
+      r.task, r.assignee || "Unassigned", r.status, r.s3, r.notes
+    ].map(csvField).join(","));
+  }
+
+  // Add a tiny metadata footer row (commented-out style so Excel still treats as data)
+  // Skipping it — better that the CSV stay 100% data clean for downstream tools.
+
+  const csv = "\ufeff" + lines.join("\r\n"); // BOM for Excel UTF-8 support
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url  = URL.createObjectURL(blob);
+
+  const dt   = new Date();
+  const pad  = n => String(n).padStart(2, "0");
+  const ts   = `${dt.getFullYear()}${pad(dt.getMonth()+1)}${pad(dt.getDate())}_${pad(dt.getHours())}${pad(dt.getMinutes())}`;
+  const filtSuffix = (
+    [document.getElementById("filterType").value,
+     document.getElementById("filterRegion").value,
+     document.getElementById("filterCountry").value,
+     document.getElementById("filterAssignee").value,
+     document.getElementById("filterStatus").value].filter(Boolean).join("_")
+  );
+  const filename = `abbott_tracker_${ts}${filtSuffix ? "_" + filtSuffix.replace(/\s+/g, "-") : ""}.csv`;
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function csvField(value) {
+  const s = value == null ? "" : String(value);
+  // Quote if contains comma, quote, or newline; escape internal quotes by doubling
+  if (/[",\r\n]/.test(s)) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
 // ── Utils ──────────────────────────────────────────────────────────
 function inferCountry(region) {
   // Best-effort default when a legacy row has no country set.
@@ -612,6 +723,15 @@ function inferCountry(region) {
     case "Asia":        return "Multi";   // PH or VN, can't tell from region alone
     default:            return "Multi";
   }
+}
+
+function inferType(source, subsource) {
+  // Best-effort default when a legacy row has no type set.
+  const s = `${source||""} ${subsource||""}`.toLowerCase();
+  if (/amazon|shopee|mercado|firstcry|noon|con\s*cung|product/.test(s)) return "E-commerce";
+  if (/reddit|facebook|youtube|tiktok|instagram|twitter|\bx\b|brandwatch|social/.test(s)) return "Social";
+  if (/parenting|webtretho|babycenter|momjunction|supermama|forum|community|chat/.test(s)) return "Forum";
+  return "Other";
 }
 
 function escapeHtml(s) {
