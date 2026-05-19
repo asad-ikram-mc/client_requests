@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Abbott Nutrition — Progress Tracker</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script>
+// Firebase config — same project as the comparison dashboard (abbott-sourcing)
+// Storing tracker data under a separate child path so it doesn't collide with sourcing comparison data
+let db = null, dbRef = null;
+try {
+  const firebaseConfig = {
+    apiKey: "AIzaSyBFvZjw35c3Fg5sNaZ1uI-mPg4wbbNtE68",
+    authDomain: "abbott-sourcing.firebaseapp.com",
+    databaseURL: "https://abbott-sourcing-default-rtdb.firebaseio.com",
+    projectId: "abbott-sourcing",
+    storageBucket: "abbott-sourcing.firebasestorage.app",
+    messagingSenderId: "438314500119",
+    appId: "1:438314500119:web:6032640f7f836bc59fdc52"
+  };
+  if (typeof firebase !== 'undefined') {
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+    dbRef = db.ref('abbott-tracker/rows');
+    console.log('Firebase initialized');
+  }
+} catch(e) {
+  console.error('Firebase init failed:', e.message);
+}
+</script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,500;0,9..40,700;1,9..40,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c0e14;--surface:#151820;--surface2:#1c2030;--border:#2a2e3d;
+  --text:#e4e6ef;--text2:#8b90a5;--text3:#6b7088;
+  --accent:#4f8cff;--accent2:#6c63ff;
+  --green:#34d399;--green-bg:rgba(52,211,153,0.12);
+  --orange:#fb923c;--orange-bg:rgba(251,146,60,0.12);
+  --red:#f87171;--red-bg:rgba(248,113,113,0.12);
+  --yellow:#fbbf24;--yellow-bg:rgba(251,191,36,0.12);
+  --gray:#8b90a5;--gray-bg:rgba(139,144,165,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* Hero */
+.hero{padding:28px 40px 20px;background:linear-gradient(135deg,#0c0e14 0%,#151c2e 50%,#0c0e14 100%);border-bottom:1px solid var(--border);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;right:-15%;width:500px;height:500px;background:radial-gradient(circle,rgba(52,211,153,0.07) 0%,transparent 70%);pointer-events:none}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-bottom:6px}
+.hero-left{flex:1;min-width:280px}
+.hero-label{font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:3px;color:var(--green);margin-bottom:10px}
+.hero h1{font-size:26px;font-weight:700;letter-spacing:-0.5px;margin-bottom:4px}
+.hero h1 span{color:var(--green)}
+.hero-sub{color:var(--text2);font-size:13px}
+.hero-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;padding:9px 16px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);cursor:pointer;transition:all 0.18s;text-decoration:none;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.btn:hover{border-color:var(--accent);background:var(--surface2)}
+.btn-primary{background:var(--green);color:#0c0e14;border-color:var(--green);font-weight:700}
+.btn-primary:hover{background:#5ee3a8;border-color:#5ee3a8}
+.btn-ghost{background:transparent}
+
+/* Stats row */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;padding:20px 40px 0}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+.stat-label{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text2);margin-bottom:4px}
+.stat-value{font-size:22px;font-weight:700;color:var(--accent)}
+.stat-value.green{color:var(--green)}
+.stat-value.orange{color:var(--orange)}
+.stat-value.gray{color:var(--gray)}
+
+/* Filters */
+.filters{padding:20px 40px 0;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.filter-group{display:flex;align-items:center;gap:8px}
+.filter-label{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3)}
+select,input[type="text"]{font-family:'DM Sans',sans-serif;font-size:13px;padding:7px 12px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);outline:none}
+select:focus,input[type="text"]:focus{border-color:var(--accent)}
+.search-input{min-width:220px}
+
+/* Table */
+.table-wrap{padding:20px 40px 48px;overflow-x:auto}
+table{width:100%;border-collapse:separate;border-spacing:0;min-width:1100px}
+thead th{
+  font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;
+  color:var(--text2);text-align:left;padding:12px 12px;
+  border-bottom:1px solid var(--border);background:var(--surface);
+  position:sticky;top:0;z-index:5;
+}
+tbody td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:top;background:var(--bg);transition:background 0.15s}
+tbody tr:hover td{background:var(--surface)}
+tbody tr.editing td{background:rgba(79,140,255,0.05)}
+.cell-source{font-weight:500;min-width:170px}
+.cell-source-sub{display:block;font-size:11px;color:var(--text2);margin-top:2px;font-family:'Space Mono',monospace}
+.cell-task{color:var(--text);min-width:200px;line-height:1.45}
+.cell-region{font-family:'Space Mono',monospace;font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1px}
+
+/* Status badges */
+.badge{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;padding:4px 9px;border-radius:5px;display:inline-block;font-weight:700;white-space:nowrap}
+.badge.done{background:var(--green-bg);color:var(--green)}
+.badge.running{background:var(--accent);color:#0c0e14}
+.badge.in-progress{background:var(--orange-bg);color:var(--orange)}
+.badge.pending{background:var(--gray-bg);color:var(--gray)}
+.badge.blocked{background:var(--red-bg);color:var(--red)}
+.badge.review{background:var(--yellow-bg);color:var(--yellow)}
+
+/* Assignee chip */
+.chip{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:4px 9px;border-radius:5px;display:inline-block}
+.chip.asad{background:rgba(79,140,255,0.18);color:#7eaaff}
+.chip.danny{background:rgba(108,99,255,0.18);color:#a39fff}
+.chip.daniel{background:rgba(251,146,60,0.18);color:#fdb37b}
+.chip.unassigned{background:var(--gray-bg);color:var(--gray)}
+
+/* Inputs in edit mode */
+.edit-input{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 8px;border-radius:6px;border:1px solid var(--accent);background:var(--surface);color:var(--text);outline:none}
+.edit-select{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 8px;border-radius:6px;border:1px solid var(--accent);background:var(--surface);color:var(--text);outline:none}
+textarea.edit-input{resize:vertical;min-height:38px;font-family:'DM Sans',sans-serif}
+
+/* S3 link cell */
+.s3-link{font-family:'Space Mono',monospace;font-size:11px;color:var(--accent);text-decoration:none;word-break:break-all;display:inline-block;max-width:280px}
+.s3-link:hover{text-decoration:underline}
+.s3-empty{color:var(--text3);font-style:italic;font-size:12px}
+
+/* Actions cell */
+.actions{display:flex;gap:6px;white-space:nowrap}
+.icon-btn{width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:14px;display:inline-flex;align-items:center;justify-content:center;transition:all 0.15s;padding:0}
+.icon-btn:hover{background:var(--surface2);color:var(--text)}
+.icon-btn.edit:hover{border-color:var(--accent);color:var(--accent)}
+.icon-btn.save:hover{border-color:var(--green);color:var(--green)}
+.icon-btn.cancel:hover{border-color:var(--orange);color:var(--orange)}
+.icon-btn.delete:hover{border-color:var(--red);color:var(--red)}
+
+/* Status info */
+.status-bar{display:flex;align-items:center;gap:14px;padding:14px 40px;background:var(--surface);border-bottom:1px solid var(--border);font-size:12px;color:var(--text2);font-family:'Space Mono',monospace}
+.status-bar .dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.status-bar .dot.offline{background:var(--red);animation:none}
+
+/* Empty state */
+.empty-row td{text-align:center;padding:60px 20px;color:var(--text2);font-size:14px}
+
+@media(max-width:768px){
+  .hero,.stats,.filters,.table-wrap,.status-bar{padding-left:16px;padding-right:16px}
+  .hero h1{font-size:21px}
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-top">
+    <div class="hero-left">
+      <div class="hero-label">Live Workspace · Synced</div>
+      <h1>Abbott IMF — <span>Progress Tracker</span></h1>
+      <div class="hero-sub">All data sources from the Abbott IMF discourse list. Assign to team, mark progress, link the S3 output.</div>
+    </div>
+    <div class="hero-actions">
+      <a class="btn btn-ghost" href="index.html">← Hub</a>
+      <a class="btn" href="comparison.html">Sourcing Comparison</a>
+      <button class="btn btn-primary" onclick="addRow()">+ Add Row</button>
+    </div>
+  </div>
+</div>
+
+<div class="status-bar">
+  <span><span class="dot" id="syncDot"></span><span id="syncStatus">Connecting...</span></span>
+  <span>|</span>
+  <span>Last update: <span id="lastUpdate">—</span></span>
+  <span>|</span>
+  <span><span id="rowCount">0</span> rows</span>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-label">Done</div><div class="stat-value green" id="statDone">0</div></div>
+  <div class="stat"><div class="stat-label">Running</div><div class="stat-value" id="statRunning">0</div></div>
+  <div class="stat"><div class="stat-label">In Progress</div><div class="stat-value orange" id="statInProgress">0</div></div>
+  <div class="stat"><div class="stat-label">Pending</div><div class="stat-value gray" id="statPending">0</div></div>
+  <div class="stat"><div class="stat-label">Blocked</div><div class="stat-value" style="color:var(--red)" id="statBlocked">0</div></div>
+</div>
+
+<div class="filters">
+  <div class="filter-group">
+    <span class="filter-label">Assignee</span>
+    <select id="filterAssignee" onchange="applyFilters()">
+      <option value="">All</option>
+      <option value="Asad">Asad</option>
+      <option value="Danny">Danny</option>
+      <option value="Daniel">Daniel</option>
+      <option value="Unassigned">Unassigned</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Status</span>
+    <select id="filterStatus" onchange="applyFilters()">
+      <option value="">All</option>
+      <option value="Done">Done</option>
+      <option value="Running">Running</option>
+      <option value="In Progress">In Progress</option>
+      <option value="Pending">Pending</option>
+      <option value="Blocked">Blocked</option>
+      <option value="Review">Review</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Region</span>
+    <select id="filterRegion" onchange="applyFilters()">
+      <option value="">All</option>
+      <option value="LatAm">LatAm</option>
+      <option value="Asia">Asia</option>
+      <option value="South Asia">South Asia</option>
+      <option value="Middle East">Middle East</option>
+      <option value="Global">Global</option>
+    </select>
+  </div>
+  <div class="filter-group" style="flex:1;justify-content:flex-end">
+    <input type="text" id="searchInput" class="search-input" placeholder="Search source or task..." oninput="applyFilters()">
+  </div>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:18%">Source</th>
+        <th style="width:9%">Region</th>
+        <th style="width:24%">Task</th>
+        <th style="width:11%">Assignee</th>
+        <th style="width:10%">Status</th>
+        <th style="width:18%">Done At (S3 / URL)</th>
+        <th style="width:8%">Notes</th>
+        <th style="width:2%"></th>
+      </tr>
+    </thead>
+    <tbody id="rowsBody">
+      <tr class="empty-row"><td colspan="8">Loading...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// SEED DATA — initial set of sources from the Abbott IMF list
+// Loaded once on first run if Firebase has no data
+// ═══════════════════════════════════════════════════════════════
+const SEED_ROWS = [
+  // E-COMMERCE — DONE
+  {source:"Amazon",          subsource:"Products MX/IN/KSA", region:"Global",       task:"Product scrape (1,258 products)",                       assignee:"Asad",   status:"Done",        s3:"s3://wikitablescrapexample/abbott_scraping/", notes:"3 markets covered"},
+  {source:"Mercado Libre",   subsource:"MX + CADR",          region:"LatAm",        task:"Product scrape",                                         assignee:"Asad",   status:"Done",        s3:"s3://wikitablescrapexample/abbott_scraping/latin_america/", notes:""},
+  {source:"Shopee",          subsource:"PH + VN products",   region:"Asia",         task:"Product scrape (1,611 unique products)",                 assignee:"Asad",   status:"Done",        s3:"s3://wikitablescrapexample/abbott_scraping/shopee_v2/", notes:""},
+  {source:"FirstCry",        subsource:"India products",     region:"South Asia",   task:"Product scrape (2,653 products)",                        assignee:"Asad",   status:"Done",        s3:"s3://wikitablescrapexample/abbott_scraping/south_asia/firstcry_IN_20260515_113138.json", notes:""},
+  {source:"Noon",            subsource:"KSA products",       region:"Middle East",  task:"Product scrape (100 products)",                          assignee:"Asad",   status:"Done",        s3:"s3://wikitablescrapexample/abbott_scraping/middle_east/noon_KSA_20260515_115227.json", notes:""},
+
+  // E-COMMERCE — REVIEWS (running / pending)
+  {source:"Shopee",          subsource:"PH + VN reviews",    region:"Asia",         task:"Review scrape (~135K expected, batches of 200 to S3)",   assignee:"Asad",   status:"Running",     s3:"s3://wikitablescrapexample/abbott_scraping/shopee_v2/reviews/", notes:"Live dashboard: 89.116.51.51:8767"},
+  {source:"Noon",            subsource:"KSA reviews",        region:"Middle East",  task:"Review scrape via Apify shahidirfan actor",              assignee:"Asad",   status:"Pending",     s3:"", notes:"~£20, 1-2 hr runtime"},
+  {source:"FirstCry",        subsource:"India reviews",      region:"South Asia",   task:"Review scrape (extend product scrape, ~50K expected)",   assignee:"Asad",   status:"Pending",     s3:"", notes:"~half day build"},
+  {source:"Amazon",          subsource:"Reviews bypass",     region:"Global",       task:"Top-10 via Oxylabs amazon_product + Woot for US-syndicated ASINs", assignee:"Asad", status:"Pending", s3:"", notes:"100-review wall confirmed on every public scraper"},
+
+  // FORUMS / DISCOURSE — TO BUILD
+  {source:"Smart Parenting", subsource:"PH parentchat",      region:"Asia",         task:"Forum scrape (SMF) — Similac/Pediasure threads",         assignee:"",       status:"Pending",     s3:"", notes:""},
+  {source:"Webtretho",       subsource:"VN forum",           region:"Asia",         task:"Forum scrape — main VN parenting community",             assignee:"",       status:"Pending",     s3:"", notes:""},
+  {source:"Con Cung",        subsource:"VN product reviews", region:"Asia",         task:"Review scrape per product page",                         assignee:"",       status:"Pending",     s3:"", notes:""},
+  {source:"BabyCenter",      subsource:"Español (LatAm)",    region:"LatAm",        task:"Forum + community scrape",                               assignee:"",       status:"Pending",     s3:"", notes:""},
+  {source:"BabyCenter",      subsource:"India community",    region:"South Asia",   task:"Forum + community scrape",                               assignee:"",       status:"Pending",     s3:"", notes:""},
+  {source:"MomJunction",     subsource:"India articles+cmts",region:"South Asia",   task:"Article comments scrape (lower priority)",               assignee:"",       status:"Pending",     s3:"", notes:"Editorial site, not a true forum"},
+  {source:"Supermama.me",    subsource:"Middle East",        region:"Middle East",  task:"Content scrape — feasibility check first",               assignee:"",       status:"Pending",     s3:"", notes:"Sparse Abbott content"},
+
+  // SOCIAL via APIFY
+  {source:"Reddit",          subsource:"Formula subs",       region:"Global",       task:"Apify scrape — r/FormulaFeeders, r/Mommit, r/beyondthebump, market-specific subs", assignee:"", status:"Pending", s3:"", notes:"Need subreddit URL list from team"},
+  {source:"Facebook",        subsource:"Parenting groups",   region:"Global",       task:"Apify scrape of specified parenting groups per market", assignee:"",       status:"Pending",     s3:"", notes:"Need group URL list from team"},
+
+  // SOCIAL via BRANDWATCH
+  {source:"YouTube",         subsource:"All markets",        region:"Global",       task:"Pull via Brandwatch",                                    assignee:"Danny",  status:"In Progress", s3:"", notes:"Brandwatch workflow"},
+  {source:"X (Twitter)",     subsource:"All markets",        region:"Global",       task:"Pull via Brandwatch",                                    assignee:"Danny",  status:"In Progress", s3:"", notes:"Brandwatch workflow"},
+
+  // OPEN QUESTIONS / DECISION-PENDING
+  {source:"Instagram",       subsource:"All markets",        region:"Global",       task:"Decide: Apify per-platform actor or skip (not on Brandwatch)", assignee:"Danny", status:"Review", s3:"", notes:"~£50-100 per market if in scope"},
+  {source:"TikTok",          subsource:"All markets",        region:"Global",       task:"Decide: Apify per-platform actor or skip (not on Brandwatch)", assignee:"Danny", status:"Review", s3:"", notes:"~£50-100 per market if in scope"},
+  {source:"Instagram Reels", subsource:"All markets",        region:"Global",       task:"Decide: in scope or covered under Instagram?",          assignee:"Danny",  status:"Review",      s3:"", notes:""},
+];
+
+const ASSIGNEES   = ["", "Asad", "Danny", "Daniel"];
+const STATUSES    = ["Done", "Running", "In Progress", "Pending", "Blocked", "Review"];
+const REGIONS     = ["LatAm", "Asia", "South Asia", "Middle East", "Global"];
+
+let rows = {};        // {firebaseKey: rowData}
+let editingId = null;
+let isOffline = false;
+
+// ── Firebase: load + listen ────────────────────────────────────────
+function start() {
+  if (!dbRef) {
+    isOffline = true;
+    showOffline();
+    // Load seed into memory only
+    SEED_ROWS.forEach((r, i) => { rows[`local-${i}`] = r; });
+    render();
+    return;
+  }
+
+  dbRef.on("value", snap => {
+    const data = snap.val();
+    if (data === null) {
+      // Empty DB — push seed
+      console.log("Empty DB, seeding with initial rows");
+      const seeds = {};
+      SEED_ROWS.forEach(r => {
+        const newRef = dbRef.push();
+        seeds[newRef.key] = r;
+      });
+      dbRef.set(seeds);
+      return; // .on will re-fire with new data
+    }
+    rows = data;
+    showOnline();
+    render();
+  }, err => {
+    console.error("Firebase read failed:", err);
+    isOffline = true;
+    showOffline();
+    SEED_ROWS.forEach((r, i) => { rows[`local-${i}`] = r; });
+    render();
+  });
+}
+
+function showOnline() {
+  document.getElementById("syncDot").classList.remove("offline");
+  document.getElementById("syncStatus").textContent = "Live · synced";
+  document.getElementById("lastUpdate").textContent = new Date().toLocaleTimeString();
+}
+
+function showOffline() {
+  document.getElementById("syncDot").classList.add("offline");
+  document.getElementById("syncStatus").textContent = "Offline mode (Firebase not connected)";
+}
+
+// ── Render ─────────────────────────────────────────────────────────
+function applyFilters() { render(); }
+
+function getFilteredRows() {
+  const fA = document.getElementById("filterAssignee").value;
+  const fS = document.getElementById("filterStatus").value;
+  const fR = document.getElementById("filterRegion").value;
+  const fT = (document.getElementById("searchInput").value || "").toLowerCase().trim();
+
+  return Object.entries(rows).filter(([id, r]) => {
+    if (fA === "Unassigned" && r.assignee) return false;
+    if (fA && fA !== "Unassigned" && r.assignee !== fA) return false;
+    if (fS && r.status !== fS) return false;
+    if (fR && r.region !== fR) return false;
+    if (fT) {
+      const hay = `${r.source||""} ${r.subsource||""} ${r.task||""} ${r.notes||""}`.toLowerCase();
+      if (!hay.includes(fT)) return false;
+    }
+    return true;
+  });
+}
+
+function render() {
+  const filtered = getFilteredRows();
+  const body = document.getElementById("rowsBody");
+
+  // Stats (compute from full rows, not filtered, so totals reflect reality)
+  const allRows = Object.values(rows);
+  document.getElementById("rowCount").textContent = allRows.length;
+  document.getElementById("statDone").textContent       = allRows.filter(r => r.status === "Done").length;
+  document.getElementById("statRunning").textContent    = allRows.filter(r => r.status === "Running").length;
+  document.getElementById("statInProgress").textContent = allRows.filter(r => r.status === "In Progress").length;
+  document.getElementById("statPending").textContent    = allRows.filter(r => r.status === "Pending").length;
+  document.getElementById("statBlocked").textContent    = allRows.filter(r => r.status === "Blocked").length;
+
+  if (filtered.length === 0) {
+    body.innerHTML = `<tr class="empty-row"><td colspan="8">No rows match the current filters.</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = filtered.map(([id, r]) => renderRow(id, r)).join("");
+}
+
+function renderRow(id, r) {
+  if (editingId === id) return renderEditingRow(id, r);
+
+  const assigneeChip = r.assignee
+    ? `<span class="chip ${r.assignee.toLowerCase()}">${escapeHtml(r.assignee)}</span>`
+    : `<span class="chip unassigned">Unassigned</span>`;
+
+  const statusBadge = `<span class="badge ${slug(r.status)}">${escapeHtml(r.status || "Pending")}</span>`;
+
+  const s3Cell = r.s3
+    ? `<a class="s3-link" href="${escapeAttr(r.s3)}" target="_blank" title="${escapeAttr(r.s3)}">${escapeHtml(truncate(r.s3, 38))}</a>`
+    : `<span class="s3-empty">—</span>`;
+
+  return `
+    <tr data-id="${id}">
+      <td class="cell-source">
+        ${escapeHtml(r.source || "—")}
+        ${r.subsource ? `<span class="cell-source-sub">${escapeHtml(r.subsource)}</span>` : ""}
+      </td>
+      <td class="cell-region">${escapeHtml(r.region || "—")}</td>
+      <td class="cell-task">${escapeHtml(r.task || "")}</td>
+      <td>${assigneeChip}</td>
+      <td>${statusBadge}</td>
+      <td>${s3Cell}</td>
+      <td style="color:var(--text2);font-size:12px;line-height:1.45">${escapeHtml(r.notes || "")}</td>
+      <td>
+        <div class="actions">
+          <button class="icon-btn edit"   onclick="startEdit('${id}')"  title="Edit">✎</button>
+          <button class="icon-btn delete" onclick="deleteRow('${id}')"  title="Delete">🗑</button>
+        </div>
+      </td>
+    </tr>`;
+}
+
+function renderEditingRow(id, r) {
+  const asOpts = ASSIGNEES.map(a => `<option value="${escapeAttr(a)}" ${r.assignee === a ? "selected" : ""}>${a || "Unassigned"}</option>`).join("");
+  const stOpts = STATUSES.map(s => `<option value="${escapeAttr(s)}" ${r.status === s ? "selected" : ""}>${s}</option>`).join("");
+  const rgOpts = REGIONS.map(rg => `<option value="${escapeAttr(rg)}" ${r.region === rg ? "selected" : ""}>${rg}</option>`).join("");
+
+  return `
+    <tr data-id="${id}" class="editing">
+      <td>
+        <input class="edit-input" id="edit-source-${id}" value="${escapeAttr(r.source || "")}" placeholder="Source"/>
+        <input class="edit-input" id="edit-subsource-${id}" value="${escapeAttr(r.subsource || "")}" placeholder="Sub-source / detail" style="margin-top:5px;font-family:'Space Mono',monospace;font-size:11px"/>
+      </td>
+      <td><select class="edit-select" id="edit-region-${id}">${rgOpts}</select></td>
+      <td><textarea class="edit-input" id="edit-task-${id}" placeholder="Task description">${escapeHtml(r.task || "")}</textarea></td>
+      <td><select class="edit-select" id="edit-assignee-${id}">${asOpts}</select></td>
+      <td><select class="edit-select" id="edit-status-${id}">${stOpts}</select></td>
+      <td><input class="edit-input" id="edit-s3-${id}" value="${escapeAttr(r.s3 || "")}" placeholder="s3://bucket/path or https://..."/></td>
+      <td><textarea class="edit-input" id="edit-notes-${id}" placeholder="Notes">${escapeHtml(r.notes || "")}</textarea></td>
+      <td>
+        <div class="actions">
+          <button class="icon-btn save"   onclick="saveEdit('${id}')"  title="Save">✓</button>
+          <button class="icon-btn cancel" onclick="cancelEdit()"       title="Cancel">✕</button>
+        </div>
+      </td>
+    </tr>`;
+}
+
+// ── Mutations ──────────────────────────────────────────────────────
+function startEdit(id) {
+  editingId = id;
+  render();
+  // Focus first input
+  setTimeout(() => { const el = document.getElementById(`edit-source-${id}`); if (el) el.focus(); }, 50);
+}
+
+function cancelEdit() {
+  editingId = null;
+  render();
+}
+
+function saveEdit(id) {
+  const updated = {
+    source:    document.getElementById(`edit-source-${id}`).value.trim(),
+    subsource: document.getElementById(`edit-subsource-${id}`).value.trim(),
+    region:    document.getElementById(`edit-region-${id}`).value,
+    task:      document.getElementById(`edit-task-${id}`).value.trim(),
+    assignee:  document.getElementById(`edit-assignee-${id}`).value,
+    status:    document.getElementById(`edit-status-${id}`).value,
+    s3:        document.getElementById(`edit-s3-${id}`).value.trim(),
+    notes:     document.getElementById(`edit-notes-${id}`).value.trim(),
+  };
+
+  editingId = null;
+  if (dbRef) {
+    dbRef.child(id).set(updated).then(() => {
+      document.getElementById("lastUpdate").textContent = new Date().toLocaleTimeString();
+    }).catch(err => {
+      console.error("Save failed:", err);
+      alert("Save failed: " + err.message);
+    });
+  } else {
+    rows[id] = updated;
+    render();
+  }
+}
+
+function addRow() {
+  const newRow = {
+    source:"", subsource:"", region:"Global", task:"",
+    assignee:"", status:"Pending", s3:"", notes:""
+  };
+
+  if (dbRef) {
+    const newRef = dbRef.push();
+    newRef.set(newRow).then(() => {
+      editingId = newRef.key;
+      // .on listener will re-render and we'll be in edit mode for the new row
+    }).catch(err => {
+      console.error("Add failed:", err);
+      alert("Add failed: " + err.message);
+    });
+  } else {
+    const id = "local-" + Date.now();
+    rows[id] = newRow;
+    editingId = id;
+    render();
+  }
+}
+
+function deleteRow(id) {
+  const r = rows[id];
+  const label = r ? `${r.source}${r.subsource ? " · " + r.subsource : ""}` : "this row";
+  if (!confirm(`Delete "${label}"? This cannot be undone.`)) return;
+
+  if (dbRef) {
+    dbRef.child(id).remove().then(() => {
+      document.getElementById("lastUpdate").textContent = new Date().toLocaleTimeString();
+    }).catch(err => {
+      console.error("Delete failed:", err);
+      alert("Delete failed: " + err.message);
+    });
+  } else {
+    delete rows[id];
+    render();
+  }
+}
+
+// ── Utils ──────────────────────────────────────────────────────────
+function escapeHtml(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+}
+function escapeAttr(s) {
+  return String(s == null ? "" : s).replace(/"/g,"&quot;");
+}
+function truncate(s, n) {
+  s = String(s || "");
+  return s.length > n ? s.slice(0, n - 1) + "…" : s;
+}
+function slug(s) {
+  return String(s || "").toLowerCase().replace(/\s+/g, "-");
+}
+
+start();
+</script>
+</body>
+</html>
