@@ -34,13 +34,13 @@ try {
 <style>
 :root{
   --bg:#0c0e14;--surface:#151820;--surface2:#1c2030;--border:#2a2e3d;
-  --text:#e4e6ef;--text2:#8b90a5;--text3:#6b7088;
-  --accent:#4f8cff;--accent2:#6c63ff;
-  --green:#34d399;--green-bg:rgba(52,211,153,0.12);
-  --orange:#fb923c;--orange-bg:rgba(251,146,60,0.12);
-  --red:#f87171;--red-bg:rgba(248,113,113,0.12);
-  --yellow:#fbbf24;--yellow-bg:rgba(251,191,36,0.12);
-  --gray:#8b90a5;--gray-bg:rgba(139,144,165,0.12);
+  --text:#f4f5fa;--text2:#b8bdd0;--text3:#8b90a5;
+  --accent:#5b9aff;--accent2:#7a72ff;
+  --green:#4ade80;--green-bg:rgba(74,222,128,0.14);
+  --orange:#fb923c;--orange-bg:rgba(251,146,60,0.14);
+  --red:#f87171;--red-bg:rgba(248,113,113,0.14);
+  --yellow:#fbbf24;--yellow-bg:rgba(251,191,36,0.14);
+  --gray:#b8bdd0;--gray-bg:rgba(184,189,208,0.12);
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
@@ -63,40 +63,48 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 /* Stats row */
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;padding:20px 40px 0}
-.stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
-.stat-label{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:2px;color:var(--text2);margin-bottom:4px}
-.stat-value{font-size:22px;font-weight:700;color:var(--accent)}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.stat-label{font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:2px;color:var(--text2);margin-bottom:6px}
+.stat-value{font-size:26px;font-weight:700;color:var(--accent)}
 .stat-value.green{color:var(--green)}
 .stat-value.orange{color:var(--orange)}
 .stat-value.gray{color:var(--gray)}
 
 /* Filters */
-.filters{padding:20px 40px 0;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.filters{padding:20px 40px 0;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .filter-group{display:flex;align-items:center;gap:8px}
-.filter-label{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3)}
-select,input[type="text"]{font-family:'DM Sans',sans-serif;font-size:13px;padding:7px 12px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);outline:none}
+.filter-label{font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text2);font-weight:700}
+select,input[type="text"]{font-family:'DM Sans',sans-serif;font-size:14px;padding:8px 14px;border-radius:7px;border:1px solid var(--border);background:var(--surface);color:var(--text);outline:none}
 select:focus,input[type="text"]:focus{border-color:var(--accent)}
-.search-input{min-width:220px}
+.search-input{min-width:240px}
+
+/* Table action bar (just above table) */
+.table-actions{display:flex;justify-content:space-between;align-items:center;padding:20px 40px 0;gap:12px;flex-wrap:wrap}
+.table-actions .count-text{font-size:13px;color:var(--text2)}
+.table-actions .count-text strong{color:var(--text);font-weight:700}
+.btn-add-inline{font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;padding:10px 18px;border-radius:8px;border:1px solid var(--green);background:var(--green);color:#0c0e14;cursor:pointer;transition:all 0.18s;display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.btn-add-inline:hover{background:#5ee395;border-color:#5ee395;transform:translateY(-1px);box-shadow:0 4px 12px rgba(74,222,128,0.25)}
 
 /* Table */
 .table-wrap{padding:20px 40px 48px;overflow-x:auto}
 table{width:100%;border-collapse:separate;border-spacing:0;min-width:1100px}
 thead th{
-  font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;
-  color:var(--text2);text-align:left;padding:12px 12px;
+  font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;
+  color:var(--text2);text-align:left;padding:14px 14px;
   border-bottom:1px solid var(--border);background:var(--surface);
   position:sticky;top:0;z-index:5;
 }
-tbody td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:top;background:var(--bg);transition:background 0.15s}
+tbody td{padding:14px 14px;border-bottom:1px solid var(--border);font-size:14.5px;vertical-align:top;background:var(--bg);transition:background 0.15s;color:var(--text);line-height:1.5}
 tbody tr:hover td{background:var(--surface)}
-tbody tr.editing td{background:rgba(79,140,255,0.05)}
-.cell-source{font-weight:500;min-width:170px}
-.cell-source-sub{display:block;font-size:11px;color:var(--text2);margin-top:2px;font-family:'Space Mono',monospace}
-.cell-task{color:var(--text);min-width:200px;line-height:1.45}
-.cell-region{font-family:'Space Mono',monospace;font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:1px}
+tbody tr.editing td{background:rgba(91,154,255,0.06)}
+.cell-source{font-weight:600;min-width:170px;font-size:15px}
+.cell-source-sub{display:block;font-size:12px;color:var(--text2);margin-top:4px;font-family:'Space Mono',monospace;font-weight:400}
+.cell-task{color:var(--text);min-width:200px;line-height:1.55;font-size:14px}
+.cell-region{font-family:'Space Mono',monospace;font-size:12px;color:var(--text2);text-transform:uppercase;letter-spacing:1px;font-weight:700}
+.cell-notes{color:var(--text2);font-size:13px;line-height:1.5}
 
 /* Status badges */
-.badge{font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;padding:4px 9px;border-radius:5px;display:inline-block;font-weight:700;white-space:nowrap}
+.badge{font-family:'Space Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;padding:5px 10px;border-radius:6px;display:inline-block;font-weight:700;white-space:nowrap}
 .badge.done{background:var(--green-bg);color:var(--green)}
 .badge.running{background:var(--accent);color:#0c0e14}
 .badge.in-progress{background:var(--orange-bg);color:var(--orange)}
@@ -105,25 +113,25 @@ tbody tr.editing td{background:rgba(79,140,255,0.05)}
 .badge.review{background:var(--yellow-bg);color:var(--yellow)}
 
 /* Assignee chip */
-.chip{font-family:'Space Mono',monospace;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:4px 9px;border-radius:5px;display:inline-block}
-.chip.asad{background:rgba(79,140,255,0.18);color:#7eaaff}
-.chip.danny{background:rgba(108,99,255,0.18);color:#a39fff}
-.chip.daniel{background:rgba(251,146,60,0.18);color:#fdb37b}
-.chip.unassigned{background:var(--gray-bg);color:var(--gray)}
+.chip{font-family:'Space Mono',monospace;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:5px 10px;border-radius:6px;display:inline-block}
+.chip.asad{background:rgba(91,154,255,0.22);color:#a0c0ff}
+.chip.danny{background:rgba(122,114,255,0.22);color:#b8b3ff}
+.chip.daniel{background:rgba(251,146,60,0.22);color:#fec095}
+.chip.unassigned{background:var(--gray-bg);color:var(--text2)}
 
 /* Inputs in edit mode */
-.edit-input{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 8px;border-radius:6px;border:1px solid var(--accent);background:var(--surface);color:var(--text);outline:none}
-.edit-select{width:100%;font-family:'DM Sans',sans-serif;font-size:13px;padding:6px 8px;border-radius:6px;border:1px solid var(--accent);background:var(--surface);color:var(--text);outline:none}
-textarea.edit-input{resize:vertical;min-height:38px;font-family:'DM Sans',sans-serif}
+.edit-input{width:100%;font-family:'DM Sans',sans-serif;font-size:14px;padding:8px 10px;border-radius:6px;border:1px solid var(--accent);background:var(--surface);color:var(--text);outline:none;line-height:1.5}
+.edit-select{width:100%;font-family:'DM Sans',sans-serif;font-size:14px;padding:8px 10px;border-radius:6px;border:1px solid var(--accent);background:var(--surface);color:var(--text);outline:none}
+textarea.edit-input{resize:vertical;min-height:46px;font-family:'DM Sans',sans-serif}
 
 /* S3 link cell */
-.s3-link{font-family:'Space Mono',monospace;font-size:11px;color:var(--accent);text-decoration:none;word-break:break-all;display:inline-block;max-width:280px}
+.s3-link{font-family:'Space Mono',monospace;font-size:12px;color:var(--accent);text-decoration:none;word-break:break-all;display:inline-block;max-width:280px;line-height:1.4}
 .s3-link:hover{text-decoration:underline}
-.s3-empty{color:var(--text3);font-style:italic;font-size:12px}
+.s3-empty{color:var(--text3);font-style:italic;font-size:13px}
 
 /* Actions cell */
 .actions{display:flex;gap:6px;white-space:nowrap}
-.icon-btn{width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:14px;display:inline-flex;align-items:center;justify-content:center;transition:all 0.15s;padding:0}
+.icon-btn{width:34px;height:34px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;font-size:15px;display:inline-flex;align-items:center;justify-content:center;transition:all 0.15s;padding:0}
 .icon-btn:hover{background:var(--surface2);color:var(--text)}
 .icon-btn.edit:hover{border-color:var(--accent);color:var(--accent)}
 .icon-btn.save:hover{border-color:var(--green);color:var(--green)}
@@ -131,13 +139,13 @@ textarea.edit-input{resize:vertical;min-height:38px;font-family:'DM Sans',sans-s
 .icon-btn.delete:hover{border-color:var(--red);color:var(--red)}
 
 /* Status info */
-.status-bar{display:flex;align-items:center;gap:14px;padding:14px 40px;background:var(--surface);border-bottom:1px solid var(--border);font-size:12px;color:var(--text2);font-family:'Space Mono',monospace}
-.status-bar .dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;margin-right:6px;animation:pulse 2s ease-in-out infinite}
+.status-bar{display:flex;align-items:center;gap:16px;padding:16px 40px;background:var(--surface);border-bottom:1px solid var(--border);font-size:13px;color:var(--text2);font-family:'Space Mono',monospace;flex-wrap:wrap}
+.status-bar .dot{width:9px;height:9px;border-radius:50%;background:var(--green);display:inline-block;margin-right:8px;animation:pulse 2s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 .status-bar .dot.offline{background:var(--red);animation:none}
 
 /* Empty state */
-.empty-row td{text-align:center;padding:60px 20px;color:var(--text2);font-size:14px}
+.empty-row td{text-align:center;padding:60px 20px;color:var(--text2);font-size:15px}
 
 @media(max-width:768px){
   .hero,.stats,.filters,.table-wrap,.status-bar{padding-left:16px;padding-right:16px}
@@ -215,6 +223,11 @@ textarea.edit-input{resize:vertical;min-height:38px;font-family:'DM Sans',sans-s
   <div class="filter-group" style="flex:1;justify-content:flex-end">
     <input type="text" id="searchInput" class="search-input" placeholder="Search source or task..." oninput="applyFilters()">
   </div>
+</div>
+
+<div class="table-actions">
+  <div class="count-text">Showing <strong id="visibleCount">0</strong> of <strong id="totalCount">0</strong> rows</div>
+  <button class="btn-add-inline" onclick="addRow()">+ Add new row</button>
 </div>
 
 <div class="table-wrap">
@@ -363,6 +376,8 @@ function render() {
   // Stats (compute from full rows, not filtered, so totals reflect reality)
   const allRows = Object.values(rows);
   document.getElementById("rowCount").textContent = allRows.length;
+  document.getElementById("totalCount").textContent = allRows.length;
+  document.getElementById("visibleCount").textContent = filtered.length;
   document.getElementById("statDone").textContent       = allRows.filter(r => r.status === "Done").length;
   document.getElementById("statRunning").textContent    = allRows.filter(r => r.status === "Running").length;
   document.getElementById("statInProgress").textContent = allRows.filter(r => r.status === "In Progress").length;
@@ -401,7 +416,7 @@ function renderRow(id, r) {
       <td>${assigneeChip}</td>
       <td>${statusBadge}</td>
       <td>${s3Cell}</td>
-      <td style="color:var(--text2);font-size:12px;line-height:1.45">${escapeHtml(r.notes || "")}</td>
+      <td class="cell-notes">${escapeHtml(r.notes || "")}</td>
       <td>
         <div class="actions">
           <button class="icon-btn edit"   onclick="startEdit('${id}')"  title="Edit">✎</button>
