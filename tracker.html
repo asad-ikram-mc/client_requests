@@ -119,6 +119,22 @@ tbody tr.editing td{background:rgba(91,154,255,0.06)}
 .chip.daniel{background:rgba(251,146,60,0.22);color:#fec095}
 .chip.unassigned{background:var(--gray-bg);color:var(--text2)}
 
+/* Country chip — prominent, always visible */
+.country-chip{
+  font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;
+  padding:5px 12px;border-radius:6px;display:inline-block;
+  background:rgba(91,154,255,0.16);color:#a0c0ff;
+  border:1px solid rgba(91,154,255,0.3);
+  white-space:nowrap;
+}
+.country-missing{
+  font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;
+  padding:5px 10px;border-radius:6px;display:inline-block;
+  background:var(--red-bg);color:var(--red);
+  border:1px dashed var(--red);
+  white-space:nowrap;cursor:help;
+}
+
 /* Inputs in edit mode */
 .edit-input{width:100%;font-family:'DM Sans',sans-serif;font-size:14px;padding:8px 10px;border-radius:6px;border:1px solid var(--accent);background:var(--surface);color:var(--text);outline:none;line-height:1.5}
 .edit-select{width:100%;font-family:'DM Sans',sans-serif;font-size:14px;padding:8px 10px;border-radius:6px;border:1px solid var(--accent);background:var(--surface);color:var(--text);outline:none}
@@ -310,7 +326,7 @@ const SEED_ROWS = [
 const ASSIGNEES   = ["", "Asad", "Danny", "Daniel"];
 const STATUSES    = ["Done", "Running", "In Progress", "Pending", "Blocked", "Review"];
 const REGIONS     = ["LatAm", "Asia", "South Asia", "Middle East", "Global"];
-const COUNTRIES   = ["", "Mexico", "CADR", "Philippines", "Vietnam", "India", "Saudi Arabia", "UAE", "Multi"];
+const COUNTRIES   = ["Mexico", "CADR", "Philippines", "Vietnam", "India", "Saudi Arabia", "UAE", "Multi"];
 
 let rows = {};        // {firebaseKey: rowData}
 let editingId = null;
@@ -340,6 +356,22 @@ function start() {
       dbRef.set(seeds);
       return; // .on will re-fire with new data
     }
+
+    // Auto-backfill: any existing row missing a `country` field gets inferred
+    // from region (best-effort) so the column is never blank for any user.
+    const patches = {};
+    Object.entries(data).forEach(([id, r]) => {
+      if (!r.country) {
+        patches[`${id}/country`] = inferCountry(r.region);
+        // Also patch the in-memory copy so render shows the value immediately
+        data[id].country = inferCountry(r.region);
+      }
+    });
+    if (Object.keys(patches).length > 0) {
+      console.log(`Backfilling country on ${Object.keys(patches).length} legacy rows`);
+      dbRef.update(patches).catch(err => console.warn("Backfill update failed:", err));
+    }
+
     rows = data;
     showOnline();
     render();
@@ -430,7 +462,7 @@ function renderRow(id, r) {
         ${r.subsource ? `<span class="cell-source-sub">${escapeHtml(r.subsource)}</span>` : ""}
       </td>
       <td class="cell-region">${escapeHtml(r.region || "—")}</td>
-      <td class="cell-region" style="color:var(--text);font-weight:600">${escapeHtml(r.country || "—")}</td>
+      <td>${countryCell(r.country)}</td>
       <td class="cell-task">${escapeHtml(r.task || "")}</td>
       <td>${assigneeChip}</td>
       <td>${statusBadge}</td>
@@ -445,11 +477,19 @@ function renderRow(id, r) {
     </tr>`;
 }
 
+function countryCell(country) {
+  if (!country) {
+    return `<span class="country-missing" title="Country not set — edit row to assign">⚠ Not set</span>`;
+  }
+  return `<span class="country-chip">${escapeHtml(country)}</span>`;
+}
+
 function renderEditingRow(id, r) {
   const asOpts = ASSIGNEES.map(a => `<option value="${escapeAttr(a)}" ${r.assignee === a ? "selected" : ""}>${a || "Unassigned"}</option>`).join("");
   const stOpts = STATUSES.map(s => `<option value="${escapeAttr(s)}" ${r.status === s ? "selected" : ""}>${s}</option>`).join("");
   const rgOpts = REGIONS.map(rg => `<option value="${escapeAttr(rg)}" ${r.region === rg ? "selected" : ""}>${rg}</option>`).join("");
-  const coOpts = COUNTRIES.map(co => `<option value="${escapeAttr(co)}" ${r.country === co ? "selected" : ""}>${co || "—"}</option>`).join("");
+  const coOpts = (r.country ? "" : `<option value="" selected>— Pick a country —</option>`) +
+                 COUNTRIES.map(co => `<option value="${escapeAttr(co)}" ${r.country === co ? "selected" : ""}>${co}</option>`).join("");
 
   return `
     <tr data-id="${id}" class="editing">
@@ -487,11 +527,18 @@ function cancelEdit() {
 }
 
 function saveEdit(id) {
+  const country = document.getElementById(`edit-country-${id}`).value;
+  if (!country) {
+    alert("Please pick a Country before saving. Use 'Multi' if the task covers more than one country.");
+    document.getElementById(`edit-country-${id}`).focus();
+    return;
+  }
+
   const updated = {
     source:    document.getElementById(`edit-source-${id}`).value.trim(),
     subsource: document.getElementById(`edit-subsource-${id}`).value.trim(),
     region:    document.getElementById(`edit-region-${id}`).value,
-    country:   document.getElementById(`edit-country-${id}`).value,
+    country:   country,
     task:      document.getElementById(`edit-task-${id}`).value.trim(),
     assignee:  document.getElementById(`edit-assignee-${id}`).value,
     status:    document.getElementById(`edit-status-${id}`).value,
@@ -515,7 +562,7 @@ function saveEdit(id) {
 
 function addRow() {
   const newRow = {
-    source:"", subsource:"", region:"Global", country:"", task:"",
+    source:"", subsource:"", region:"Global", country:"Multi", task:"",
     assignee:"", status:"Pending", s3:"", notes:""
   };
 
@@ -555,6 +602,18 @@ function deleteRow(id) {
 }
 
 // ── Utils ──────────────────────────────────────────────────────────
+function inferCountry(region) {
+  // Best-effort default when a legacy row has no country set.
+  // Region maps roughly to a primary market; "Multi" for anything ambiguous.
+  switch (region) {
+    case "LatAm":       return "Mexico";
+    case "South Asia":  return "India";
+    case "Middle East": return "Saudi Arabia";
+    case "Asia":        return "Multi";   // PH or VN, can't tell from region alone
+    default:            return "Multi";
+  }
+}
+
 function escapeHtml(s) {
   return String(s == null ? "" : s)
     .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
